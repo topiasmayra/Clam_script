@@ -1,4 +1,4 @@
-local PickUpClams = false
+PickUpClams = false
 
 Citizen.CreateThread(function()
     while true do 
@@ -9,20 +9,15 @@ Citizen.CreateThread(function()
             local pos = GetEntityCoords(playerPed)
             local clamLocation = vector3(-3114.4387, 8.2212, -2.417)
             local distance = #(pos - clamLocation)
+            
 
-            if PickUpClams then
-                PickUpClams = false
-                ESX.ShowNotification("Stopped picking clams")
-                ClearPedTasks(playerPed)
-            else
                 if distance < 40.0 and IsEntityInWater(playerPed) then
                     ESX.ShowNotification("You are picking up clams - Press E again to stop")
-                    TaskStartScenarioInPlace(playerPed, "PROP_HUMAN_ATM", 0, true)
-                    PickUpClams = true
+                    TriggerServerEvent("PickUpClams")
+                    
                 else
                     ESX.ShowNotification("You are not near clams or not in water!")
                 end
-            end
         end
 
         if PickUpClams then
@@ -31,10 +26,9 @@ Citizen.CreateThread(function()
             local clamLocation = vector3(-2500.0000, -2000.0000, 0.0000)
             local distance = #(pos - clamLocation)
             
-            if distance > 40.0 or IsEntityDead(playerPed) then 
+            if distance > 40.0 or IsEntityDead(playerPed()) then 
                 PickUpClams = false
-                ESX.ShowNotification("Stopped picking clams")
-                ClearPedTasks(playerPed)
+                ESX.ShowNotification("Stopped picking 1")
             end
         end
     end
@@ -46,19 +40,12 @@ Citizen.CreateThread(function()
         Citizen.Wait(waitTime)
         
         if PickUpClams then
-            disableMovement = true
-            disableMouse = true
-            disableCombat = true
-            FreezePlayer = true
-            
-            ESX.ShowNotification("You are picking up clams!")
 
+            ESX.ShowNotification("You are picking up clams!")
+            TriggerServerEvent('PickUpClams')
+            PickUpClams = false
             Citizen.Wait(5000)  -- Wait for 5 seconds (adjust as needed)
-            
-            disableMovement = false
-            disableMouse = false
-            disableCombat = false
-            FreezePlayer = false
+    
         end
     end
 end)
@@ -66,6 +53,10 @@ end)
 RegisterNetEvent('PickUpClams:stop')
 AddEventHandler('PickUpClams:stop', function()
     PickUpClams = false
+    disableMovement = false
+    disableMouse = false
+    disableCombat = false
+    FreezePlayer = false
     ClearPedTasks(PlayerPedId())
 end)
 
@@ -82,6 +73,11 @@ AddEventHandler('PickUpClams:start', function()
         if distance < 40.0 and IsEntityInWater(playerPed) then
             ESX.ShowNotification("You are picking up clams - Press E again to stop")
             TaskStartScenarioInPlace(playerPed, "PROP_HUMAN_ATM", 0, true)
+            print("PickUpClams", PickUpClams)
+            disableMovement = true
+            disableMouse = true
+            disableCombat = true
+            FreezePlayer = true
             PickUpClams = true
         end
     end

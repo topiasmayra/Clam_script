@@ -4,19 +4,16 @@ ESX.RegisterUsableItem('clam', function(source)
     TriggerClientEvent('esx:showNotification', source, "You can't use clams directly.")
 end)
 
-RegisterNetEvent('PickUpClams')
+RegisterServerEvent('PickUpClams')
 AddEventHandler('PickUpClams', function()
-    local PlayerId = source
     local amount
+    PlayerId =source
     local xPlayer = ESX.GetPlayerFromId(PlayerId)
-    
     amount = math.random(1, 3) -- Adjust amount as per your configuration
-    
-    TriggerClientEvent('PickUpClams:start', PlayerId) -- Trigger client event to start animation or process
-
-    if xPlayer.canCarryItem('clam', amount) then
+    if xPlayer.canCarryItem('clam', 1) then
         TriggerClientEvent('esx:showNotification', PlayerId, "You found clams: " .. amount)
-        xPlayer.addInventoryItem('clam', amount)
+        TriggerClientEvent('PickUpClams:start', PlayerId)
+        xPlayer.addInventoryItem('clam', 1)
     else
         TriggerClientEvent('esx:showNotification', PlayerId, "You can't carry more clams")
     end
