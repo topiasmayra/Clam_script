@@ -9,7 +9,7 @@ ESX.RegisterUsableItem('clam_fork', function(source)
     if clam_fork_in_use == false then
         TriggerClientEvent('esx:showNotification', xPlayer, "You have equipt fork.") 
 else
-    TriggerClientEvent('esx:showNotification', xPlayer, "Fork is already in use.")
+    TriggerClientEvent('esx:showNotification', xPlayer, "Clam fork is already in use.")
     clam_fork_in_use = true
     Citizen.Wait(500)
 end
@@ -33,13 +33,12 @@ AddEventHandler('PickUpClams', function()
     PlayerId =source
     local xPlayer = ESX.GetPlayerFromId(PlayerId)
     amount = math.random(1, 3) 
-        if xPlayer.getInventoryItem('clam_fork').count < 1 then
-            TriggerClientEvent('esx:showNotification', PlayerId, "You need a clam fork to be able to pick up the clams.")
-        end
-        if   xPlayer.canCarryItem('clam', amount) then
-            TriggerClientEvent('PickUpClams:start',PlayerId)
-        else
-            TriggerClientEvent('esx:showNotification', PlayerId, "You can't carry more clams")  
-        end
-        
+    if xPlayer.getInventoryItem('clam_fork').count < 1 then
+        TriggerClientEvent('esx:showNotification', PlayerId, "You need a clam fork to be able to pick up the clams.")
+    elseif xPlayer.canCarryItem('clam', amount) then
+        TriggerClientEvent('PickUpClams:start', PlayerId)
+    else
+        TriggerClientEvent('esx:showNotification', PlayerId, "You can't carry more clams")
+    end
 end)
+    

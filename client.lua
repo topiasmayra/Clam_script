@@ -4,30 +4,26 @@ PickUpClams = false
 Citizen.CreateThread(function()
     while true do
         Citizen.Wait(0)
+        local playerPed = PlayerPedId()
+        local pos = GetEntityCoords(playerPed)
+        local clamLocation = Config.locations.clam_pool
+        local distance = #(pos - clamLocation)
 
         if IsControlJustReleased(0, 38) then
-            local playerPed = PlayerPedId()
-            local pos = GetEntityCoords(playerPed)
-            local clamLocation = Config.locations.clam_pool
-            local distance = #(pos - clamLocation)
-
-            if distance <= 40.0 and not IsEntityDead(playerPed) then
+            if distance <= 40.0 and not IsEntityDead(playerPed) and IsEntityInWater(playerPed) then
                 if PickUpClams == true then
                     TriggerEvent('PickUpClams:stop')
                     ESX.ShowNotification("Stopped digging up clams")
-                    
                 else
-                    print(PickUpClams)
                     TriggerServerEvent('PickUpClams')
                 end
-            else
-                ESX.ShowNotification("You are too far from the clam location")
             end
         end
     end
 end)
 
--- Thread Handling Clam Pickup Process
+
+
 function DigUpClams()
     local waitTime = math.random(Config.clamtimer.a, Config.clamtimer.b)
 
@@ -52,9 +48,6 @@ function DigUpClams()
     end 
 
 
-
-
--- Events for Starting and Stopping Clam Pickup
 RegisterNetEvent('PickUpClams:stop')
 AddEventHandler('PickUpClams:stop', function()
     print("pick up clams stop is called")
@@ -65,7 +58,7 @@ end)
 RegisterNetEvent('PickUpClams:start')
 AddEventHandler('PickUpClams:start', function()
     local playerPed = PlayerPedId()
-    
+
     if IsPedInAnyVehicle(playerPed, true) then
         ESX.ShowAdvancedNotification("You cannot pick up clams while inside a vehicle!")
     else
@@ -73,11 +66,11 @@ AddEventHandler('PickUpClams:start', function()
             PickUpClams = true
             ESX.ShowNotification("You are picking up clams - Press E again to stop")
             DigUpClams()
-
-            
         else
             ESX.ShowNotification("You need to be in the water to pick up clams.")
         end
     end
-end)
---TO DO WHY Stop clam stuff when cancled
+end)  
+--TO DO WHY Stop clam stuff when canceled
+-- TO DO Only run for player who have fork equipt  and are in area 
+--To do list player who are in clam area.
