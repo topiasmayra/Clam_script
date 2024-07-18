@@ -11,10 +11,12 @@ Citizen.CreateThread(function()
 
         if IsControlJustReleased(0, 38) then
             if distance <= 40.0 and not IsEntityDead(playerPed) and IsEntityInWater(playerPed) then
+                ESX.ShowFloatingHelpNotification("Press E to pick up some clams",pos) 
                 if PickUpClams == true then
                     TriggerEvent('PickUpClams:stop')
                     ESX.ShowNotification("Stopped digging up clams")
                 else
+
                     TriggerServerEvent('PickUpClams')
                 end
             end
@@ -71,6 +73,23 @@ AddEventHandler('PickUpClams:start', function()
         end
     end
 end)  
+
+
+local modelHash = Config.objects.pearl_bench -- The ` return the jenkins hash of a string. see more at: https://cookbook.fivem.net/2019/06/23/lua-support-for-compile-time-jenkins-hashes/
+
+if not HasModelLoaded(modelHash) then
+    -- If the model isnt loaded we request the loading of the model and wait that the model is loaded
+    RequestModel(modelHash)
+
+    while not HasModelLoaded(modelHash) do
+        Citizen.Wait(1)
+    end
+end
+
+
+
+
+
 --TO DO WHY Stop clam stuff when canceled
 -- TO DO Only run for player who have fork equipt  and are in area 
 --To do list player who are in clam area.

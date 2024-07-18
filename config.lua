@@ -21,5 +21,8 @@ Config.locations = {
     clam_pool = vector3(-3114.4387, 8.2212, -2.4179) 
 }
 
+Config.objects={
+    pearl_bench = 'prop_tool_bench02_ld'
+}
 
 -- Define Buttons that this resource is using 

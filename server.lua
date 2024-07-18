@@ -23,7 +23,7 @@ AddEventHandler('Giveclams',function ()
     PlayerId =source
     local xPlayer = ESX.GetPlayerFromId(PlayerId)
     amount = math.random(1, 3)     
-    TriggerClientEvent('esx:showNotification', PlayerId, "You found clams: " .. amount)
+    TriggerClientEvent('eslocations, Configtions, Configtions, ConfigowNotification', PlayerId, "You found clams: " .. amount)
     xPlayer.addInventoryItem('clam', amount)
 end)
 
@@ -37,8 +37,17 @@ AddEventHandler('PickUpClams', function()
         TriggerClientEvent('esx:showNotification', PlayerId, "You need a clam fork to be able to pick up the clams.")
     elseif xPlayer.canCarryItem('clam', amount) then
         TriggerClientEvent('PickUpClams:start', PlayerId)
+
     else
         TriggerClientEvent('esx:showNotification', PlayerId, "You can't carry more clams")
     end
 end)
     
+
+-- pearl processing
+
+ESX.RegisterUsableItem('pearl', function(source)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    TriggerClientEvent('esx:showNotification', source, "You can't eat pearls.")
+    Citizen.Wait(5000)
+end)
