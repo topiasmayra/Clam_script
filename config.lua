@@ -15,8 +15,11 @@ Config.clamtimer = {
 -- Percentage of clams returned when opened at a different location (30%)
 Config.ClamReturnPercentage = 30
 
--- Define clam locations
-Config.ClamLocations = {
-    pear_place = vector3(1319.8193, 4312.1816, 38.1064),
-    clam_pick_up = vector3(-2500.0000, -2000.0000, 0.0000) 
+-- Define  locations for clams pools and pearl process palace
+Config.locations = {
+    Clam_processing_place = vector3(1319.8193, 4312.1816, 38.1064),
+    clam_pool = vector3(-3114.4387, 8.2212, -2.4179) 
 }
+
+
+-- Define Buttons that this resource is using 

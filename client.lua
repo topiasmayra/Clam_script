@@ -1,84 +1,90 @@
 PickUpClams = false
 
+-- Main Thread Handling Input and State
 Citizen.CreateThread(function()
-    while true do 
-        Citizen.Wait(5)
+    while true do
+        Citizen.Wait(0)
 
         if IsControlJustReleased(0, 38) then
             local playerPed = PlayerPedId()
             local pos = GetEntityCoords(playerPed)
-            local clamLocation = vector3(-3114.4387, 8.2212, -2.417)
+            local clamLocation = Config.locations.clam_pool
             local distance = #(pos - clamLocation)
-            
 
-                if distance < 40.0 and IsEntityInWater(playerPed) then
-                    ESX.ShowNotification("You are picking up clams - Press E again to stop")
-                    TriggerServerEvent("PickUpClams")
-                    
+            if distance <= 40.0 and not IsEntityDead(playerPed) then
+                if PickUpClams then
+                    TriggerEvent('PickUpClams:stop')
+                    ESX.ShowNotification("Stopped digging up clams")
                 else
-                    ESX.ShowNotification("You are not near clams or not in water!")
+                    TriggerEvent('PickUpClams:start')
                 end
-        end
-
-        if PickUpClams then
-            local playerPed = PlayerPedId()
-            local pos = GetEntityCoords(playerPed)
-            local clamLocation = vector3(-2500.0000, -2000.0000, 0.0000)
-            local distance = #(pos - clamLocation)
-            
-            if distance > 40.0 or IsEntityDead(playerPed()) then 
-                PickUpClams = false
-                ESX.ShowNotification("Stopped picking 1")
+            else
+                ESX.ShowNotification("You are too far from the clam location")
             end
         end
     end
 end)
 
+-- Thread Handling Clam Pickup Process
 Citizen.CreateThread(function()
     while true do
-        local waitTime = math.random(Config.clamtimer.a, Config.clamtimer.b)
-        Citizen.Wait(waitTime)
-        
         if PickUpClams then
+            local waitTime = math.random(Config.clamtimer.a, Config.clamtimer.b)
 
-            ESX.ShowNotification("You are picking up clams!")
+            ESX.Progressbar("Digging up clams", waitTime, {
+                duration = waitTime,
+                label = "Digging up clams",
+                useWhileDead = false,
+                canCancel = true,
+                controlDisables = {
+                    disableMovement = true,
+                    disableCarMovement = true,
+                    disableMouse = false,
+                    disableCombat = true,
+                },
+                animation = {
+                    task = "WORLD_HUMAN_GARDENER_PLANT",
+                },
+                prop = {
+                    model = "prop_tool_shovel",
+                    bone = 57005,
+                    coords = { x = 0.1, y = 0.0, z = 0.0 },
+                    rotation = { x = 0.0, y = 0.0, z = 180.0 },
+                },
+            })
+
+            Citizen.Wait(waitTime)
+            
             TriggerServerEvent('PickUpClams')
-            PickUpClams = false
-            Citizen.Wait(5000)  -- Wait for 5 seconds (adjust as needed)
-    
+            print("print Wait time")
         end
+
+        Citizen.Wait(500) -- Prevent tight loop
+        print ("What is this?")
     end
 end)
 
+-- Events for Starting and Stopping Clam Pickup
 RegisterNetEvent('PickUpClams:stop')
 AddEventHandler('PickUpClams:stop', function()
+   print("pick up clams stop is called")
     PickUpClams = false
-    disableMovement = false
-    disableMouse = false
-    disableCombat = false
-    FreezePlayer = false
     ClearPedTasks(PlayerPedId())
 end)
 
 RegisterNetEvent('PickUpClams:start')
 AddEventHandler('PickUpClams:start', function()
     local playerPed = PlayerPedId()
-    local pos = GetEntityCoords(playerPed)
-    local clamLocation = vector3(-2500.0000, -2000.0000, 0.0000)
-    local distance = #(pos - clamLocation)
     
-    if IsPedInAnyVehicle(playerPed, true) then 
+    if IsPedInAnyVehicle(playerPed, true) then
         ESX.ShowAdvancedNotification("You cannot pick up clams while inside a vehicle!")
     else
-        if distance < 40.0 and IsEntityInWater(playerPed) then
+        if IsEntityInWater(playerPed) then
             ESX.ShowNotification("You are picking up clams - Press E again to stop")
-            TaskStartScenarioInPlace(playerPed, "PROP_HUMAN_ATM", 0, true)
-            print("PickUpClams", PickUpClams)
-            disableMovement = true
-            disableMouse = true
-            disableCombat = true
-            FreezePlayer = true
-            PickUpClams = true
+
+        else
+            ESX.ShowNotification("You need to be in the water to pick up clams.")
         end
     end
 end)
+--TO DO WHY DOS NOT STO PICK UP CLAMS DUPLICATED ACTIONS
