@@ -5,26 +5,41 @@ end)
 
 ESX.RegisterUsableItem('clam_fork', function(source)
     local xPlayer = ESX.GetPlayerFromId(source)
-    TriggerClientEvent('esx:showNotification', source, "You have equipt fork.")
+    local clam_fork_in_use = false
+    if clam_fork_in_use == false then
+        TriggerClientEvent('esx:showNotification', xPlayer, "You have equipt fork.") 
+else
+    TriggerClientEvent('esx:showNotification', xPlayer, "Fork is already in use.")
+    clam_fork_in_use = true
+    Citizen.Wait(500)
+end
 end)
 
 
+RegisterNetEvent('Giveclams')
+AddEventHandler('Giveclams',function ()
+    
+    local amount
+    PlayerId =source
+    local xPlayer = ESX.GetPlayerFromId(PlayerId)
+    amount = math.random(1, 3)     
+    TriggerClientEvent('esx:showNotification', PlayerId, "You found clams: " .. amount)
+    xPlayer.addInventoryItem('clam', amount)
+end)
 
 RegisterNetEvent('PickUpClams')
 AddEventHandler('PickUpClams', function()
     local amount
     PlayerId =source
     local xPlayer = ESX.GetPlayerFromId(PlayerId)
-    if xPlayer.getInventoryItem('clam_fork').count < 1 then
-        TriggerClientEvent('esx:showNotification', PlayerId, "You need a clam fork to be able to pick up the clams.")
-    elseif not xPlayer.canCarryItem('clam', amount) then
-        TriggerClientEvent('esx:showNotification', PlayerId, "You can't carry more clams")
-    else
-        TriggerClientEvent('PickUpClams:start', PlayerId)
-        TriggerClientEvent('esx:showNotification', PlayerId, "You found clams: " .. amount)
-        xPlayer.addInventoryItem('clam', amount)
-        TriggerClientEvent('PickUpClams:stop', PlayerId)
-    end
-    
-
+    amount = math.random(1, 3) 
+        if xPlayer.getInventoryItem('clam_fork').count < 1 then
+            TriggerClientEvent('esx:showNotification', PlayerId, "You need a clam fork to be able to pick up the clams.")
+        end
+        if   xPlayer.canCarryItem('clam', amount) then
+            TriggerClientEvent('PickUpClams:start',PlayerId)
+        else
+            TriggerClientEvent('esx:showNotification', PlayerId, "You can't carry more clams")  
+        end
+        
 end)
