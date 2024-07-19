@@ -9,26 +9,20 @@ Citizen.CreateThread(function()
         local clamLocation = Config.locations.clam_pool
         local distance = #(pos - clamLocation)
 
-        if IsControlJustReleased(0, 38) then
-            if distance <= 40.0 and not IsEntityDead(playerPed) and IsEntityInWater(playerPed) then
-                ESX.ShowFloatingHelpNotification("Press E to pick up some clams",pos) 
-                if PickUpClams == true then
-                    TriggerEvent('PickUpClams:stop')
-                    ESX.ShowNotification("Stopped digging up clams")
-                else
-
+        if IsControlJustReleased(0, 38)  and not IsEntityDead(playerPed) and IsEntityInWater(playerPed) then
+            if distance <= 40.0  then
+                ESX.ShowHelpNotification("Press E to pick up some clams", false)
                     TriggerServerEvent('PickUpClams')
                 end
             end
         end
-    end
 end)
 
 
 
 function DigUpClams()
     local waitTime = math.random(Config.clamtimer.a, Config.clamtimer.b)
-
+    PickUpClams = true
     ESX.Progressbar("Digging up clams", waitTime, {
         FreezePlayer  = true,
         label = "Digging up clams",
@@ -41,19 +35,20 @@ function DigUpClams()
             disableMouse = false,
             disableCombat = true,
         },
-        
         onFinish = function()
             TriggerServerEvent('Giveclams')
-    
-        end})
-
-    end 
+        end,
+        onCancel = function()
+            print("I was canCancel")
+            TriggerEvent('PickUpClams:stop')
+        end,
+    })
+end
 
 
 RegisterNetEvent('PickUpClams:stop')
 AddEventHandler('PickUpClams:stop', function()
     print("pick up clams stop is called")
-    PickUpClams = false
     ClearPedTasks(PlayerPedId())
 end)
 
@@ -66,7 +61,7 @@ AddEventHandler('PickUpClams:start', function()
     else
         if IsEntityInWater(playerPed) then
             PickUpClams = true
-            ESX.ShowNotification("You are picking up clams - Press E again to stop")
+            ESX.ShowNotification("You are picking up clams - Press Backspace again to stop")
             DigUpClams()
         else
             ESX.ShowNotification("You need to be in the water to pick up clams.")
@@ -74,22 +69,4 @@ AddEventHandler('PickUpClams:start', function()
     end
 end)  
 
-
-local modelHash = Config.objects.pearl_bench -- The ` return the jenkins hash of a string. see more at: https://cookbook.fivem.net/2019/06/23/lua-support-for-compile-time-jenkins-hashes/
-
-if not HasModelLoaded(modelHash) then
-    -- If the model isnt loaded we request the loading of the model and wait that the model is loaded
-    RequestModel(modelHash)
-
-    while not HasModelLoaded(modelHash) do
-        Citizen.Wait(1)
-    end
-end
-
-
-
-
-
---TO DO WHY Stop clam stuff when canceled
--- TO DO Only run for player who have fork equipt  and are in area 
 --To do list player who are in clam area.
