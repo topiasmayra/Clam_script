@@ -3,18 +3,18 @@ Config = {}
 -- Define the price range for pearls
 Config.PearlPrice = {
     min = 600,   -- Minimum price per pearl in currency
-    max = 3000   -- Maximum price per pearl in currency
+    max = 300   -- Maximum price per pearl in currency
 }
 
 -- Define the clam timer range
 Config.clamtimer = {
     a = 5000, -- Minimum time (in milliseconds)
-    b = 1500 -- Maximum time (in milliseconds)
+    b = 15000 -- Maximum time (in milliseconds)
 }
 
 Config.pearlprocesstimer = {
-    a = 30000, -- Minimum time (in milliseconds)
-    b = 120000 -- Maximum time (in milliseconds)
+    x = 30000, -- Minimum time (in milliseconds)
+    d = 12000 -- Maximum time (in milliseconds)
 }
 
 

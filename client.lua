@@ -5,6 +5,7 @@ local processclams = false
 Citizen.CreateThread(function()
     while true do
         Citizen.Wait(50)
+        print(PickUpClams)
         local playerPed = PlayerPedId()
         local pos = GetEntityCoords(playerPed)
         local clamLocation = Config.locations.clam_pool
@@ -26,6 +27,7 @@ end)
 function DigUpClams()
     local waitTime = math.random(Config.clamtimer.a, Config.clamtimer.b)
     PickUpClams = true
+    print(waitTime + " seconds")
     ESX.Progressbar("Digging up clams", waitTime, {
         FreezePlayer  = true,
         label = "Digging up clams",
@@ -87,13 +89,17 @@ Citizen.CreateThread(function()
         local pos = GetEntityCoords(playerPed)
         local pearlLocation = Config.locations.Clam_processing_place
         local distance = #(pos - pearlLocation)
-        
+        local processarea = false
         if distance <= 5 then
+            processarea = true
             ESX.ShowHelpNotification("Press E to start processing the pearls")
+            Wait(50)
         end
-        if IsControlJustReleased(0, 38) then
-            Processpearls()
-        end  
+            if IsControlJustReleased(0, 38) and processarea == true then
+            Processpearls()  
+        else 
+        processarea = false
+        end
     end
 end)
 
@@ -129,8 +135,8 @@ function Processpearls()
     end
 end
 
-
 -- TODOD  check if code needs run every tick 
 -- TODO test fact game for pearl process
 --To do list player who are in clam area.
 --TODO MAKE SURE TASKSCNEARIO IS CALCLED IF SOMETHING HAPPENS TO SCRIPT. 
+--TODO MAKE SURE SCIRPT CAN HANDLE RESCOURSE CRASH
