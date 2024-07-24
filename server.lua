@@ -3,19 +3,6 @@ ESX.RegisterUsableItem('clam', function(source)
     TriggerClientEvent('esx:showNotification', source, "You can't eat clams.")
 end)
 
-ESX.RegisterUsableItem('clam_fork', function(source)
-    local xPlayer = ESX.GetPlayerFromId(source)
-    local clam_fork_in_use = false
-    if clam_fork_in_use == false then
-        TriggerClientEvent('esx:showNotification', xPlayer, "You have equipt fork.") 
-else
-    TriggerClientEvent('esx:showNotification', xPlayer, "Clam fork is already in use.")
-    clam_fork_in_use = true
-    Citizen.Wait(500)
-end
-end)
-
-
 RegisterNetEvent('Giveclams')
 AddEventHandler('Giveclams',function ()
     
@@ -23,7 +10,7 @@ AddEventHandler('Giveclams',function ()
     PlayerId =source
     local xPlayer = ESX.GetPlayerFromId(PlayerId)
     amount = math.random(1, 3)     
-    TriggerClientEvent('eslocations, Configtions, Configtions, ConfigowNotification', PlayerId, "You found clams: " .. amount)
+    TriggerClientEvent('esx:showNotification', PlayerId, "You found clams: " .. amount)
     xPlayer.addInventoryItem('clam', amount)
 end)
 
@@ -33,9 +20,7 @@ AddEventHandler('PickUpClams', function()
     PlayerId =source
     local xPlayer = ESX.GetPlayerFromId(PlayerId)
     amount = math.random(1, 3) 
-    if xPlayer.getInventoryItem('clam_fork').count < 1 then
-        TriggerClientEvent('esx:showNotification', PlayerId, "You need a clam fork to be able to pick up the clams.")
-    elseif xPlayer.canCarryItem('clam', amount) then
+    if xPlayer.canCarryItem('clam', amount) then
         TriggerClientEvent('PickUpClams:start', PlayerId)
 
     else
@@ -50,4 +35,23 @@ ESX.RegisterUsableItem('pearl', function(source)
     local xPlayer = ESX.GetPlayerFromId(source)
     TriggerClientEvent('esx:showNotification', source, "You can't eat pearls.")
     Citizen.Wait(5000)
+end)
+
+RegisterNetEvent('Pearlprocess')
+AddEventHandler('Pearlprocess', function()
+    print('Hello')
+    local xPlayer = ESX.GetPlayerFromId(source)
+    local clams = xPlayer.getInventoryItem('clam').count
+    local pearls = xPlayer.getInventoryItem('pearl').count
+    
+    if clams >= 3 then       
+        local amount = math.random(1, 3)
+        xPlayer.removeInventoryItem('clam', 3)
+        xPlayer.addInventoryItem('pearl', amount)
+        TriggerClientEvent('esx:showNotification', source(), "You have successfully processed your pear)}")
+        
+    
+
+
+    end
 end)
