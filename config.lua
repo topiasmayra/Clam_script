@@ -18,6 +18,11 @@ Config.pearlprocesstimer = {
 }
 
 
+Config.amount = {
+    a = 1,
+    b = 5
+}
+
 -- Percentage of clams returned when opened at a different location (30%)
 Config.ClamReturnPercentage = 30
 
@@ -27,6 +32,24 @@ Config.locations = {
     clam_pool = vector3(-3114.4387, 8.2212, -2.4179) 
 }
 
-Config.objects={
-    pearl_bench = 'prop_tool_bench02_ld'
+Config.activityConfigs = {
+    clams = {
+        location = Config.locations.clam_pool,
+        distance = 40.0,
+        startEvent = 'PickUpClams:start',
+        helpText = "Press E to pick up some clams",
+        water = "to pick up some clams",
+        inWater = true,
+        flag = 'PickUpClams',
+        progress = {Config.clamtimer.a, Config.clamtimer.b, "Digging up clams", "WORLD_HUMAN_GARDENER_PLANT", 'Giveclams'}
+    },
+    pearls = {
+        location = Config.locations.Clam_processing_place,
+        distance = 5.0,
+        startEvent = 'ProcessPearls:start',
+        helpText = "Press E to start processing the pearls",
+        inWater = false,
+        flag = 'ProcessClams',
+        progress = {Config.pearlprocesstimer.a, Config.pearlprocesstimer.b, "Opening Clams", "WORLD_HUMAN_VEHICLE_MECHANIC", 'Pearlprocess'}
+    }
 }

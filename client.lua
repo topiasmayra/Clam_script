@@ -1,30 +1,34 @@
 local PickUpClams = false
-local processclams = false
+local ProcessClams = false
 
--- Main Thread Handling Input and State
+-- Main Thread Handling Input and State for All Activities
 Citizen.CreateThread(function()
     while true do
-        Citizen.Wait(50)
+        Citizen.Wait(50) -- Polling interval
+
         local playerPed = PlayerPedId()
         local pos = GetEntityCoords(playerPed)
-        local clamLocation = Config.locations.clam_pool
-        local distance = #(pos - clamLocation)
+        for _, activity in pairs(Config.activityConfigs) do
+            local distance = #(pos - activity.location)
 
-        if IsControlJustReleased(0, 38)  and not IsEntityDead(playerPed) and IsEntityInWater(playerPed) then
-            if distance <= 40.0 and PickUpClams == false then 
-                ESX.ShowHelpNotification("Press E to pick up some clams", false)
-                    TriggerServerEvent('PickUpClams') 
-            else
-            ESX.ShowNotification("You are not nearby a clam area")
-            end        
-        end   
+            if distance <= activity.distance then
+                if activity.inWater and not IsEntityInWater(playerPed) then
+                    --ESX.ShowNotification("You need to be in the water to " .. activity.helpText:lower())
+                else
+                    ESX.ShowHelpNotification(activity.helpText, false)
+                    if IsControlJustReleased(0, 38) and not IsEntityDead(playerPed) and not _G[activity.flag] then
+                        TriggerEvent(activity.startEvent)
+                    end
+                end
+            end
         end
+    end
 end)
 
-
-function Progressbar(minTime, maxTime, progressBarText, animation, serverEvent,flag)
+-- Generic Progressbar Function
+function Progressbar(minTime, maxTime, progressBarText, animation, serverEvent, flagName)
     local waitTime = math.random(minTime, maxTime)
-    flag = true  -- Dynamically set the flag using the global table
+    _G[flagName] = true  -- Dynamically set the flag using the global table
     print(waitTime .. " seconds")
     ESX.Progressbar(progressBarText, waitTime, {
         FreezePlayer = true,
@@ -40,22 +44,28 @@ function Progressbar(minTime, maxTime, progressBarText, animation, serverEvent,f
         },
         onFinish = function()
             TriggerServerEvent(serverEvent)
-            flag = false  -- Reset the flag
-            print(flag)
+            _G[flagName] = false  -- Reset the flag
             ClearPedTasks(PlayerPedId())
         end,
         onCancel = function()
-            print("I was canCancel")
-            _G[flag] = false  -- Reset the flag
+            print("Action was cancelled")
+            _G[flagName] = false  -- Reset the flag
             TriggerEvent('cancelAction')
         end,
     })
 end
 
+RegisterNetEvent('PickUpClams:start')
+AddEventHandler('PickUpClams:start', function()
+    local config = Config.activityConfigs.clams.progress
+    Progressbar(config[1], config[2], config[3], config[4], config[5], Config.activityConfigs.clams.flag)
+end)
 
-function DigUpClams()
-    Progressbar(Config.clamtimer.a, Config.clamtimer.b, "Digging up clams", "WORLD_HUMAN_GARDENER_PLANT", 'Giveclams',"PickUpClams")
-end
+RegisterNetEvent('ProcessPearls:start')
+AddEventHandler('ProcessPearls:start', function()
+    local config = Config.activityConfigs.pearls.progress
+    Progressbar(config[1], config[2], config[3], config[4], config[5], Config.activityConfigs.pearls.flag)
+end)
 
 RegisterNetEvent('cancelAction')
 AddEventHandler('cancelAction', function()
@@ -63,40 +73,6 @@ AddEventHandler('cancelAction', function()
     ClearPedTasks(PlayerPedId())
 end)
 
-
-
-
-function Processpearls()
-    print('hello')
-    Progressbar(Config.pearlprocesstimer.a, Config.pearlprocesstimer.b, "Openning Clmas", "WORLD_HUMAN_VEHICLE_MECHANIC", 'Pearlprocess',"PickUpClams")
-end
-
-
--- Pearl part
-
-Citizen.CreateThread(function()
-    while true do
-        Citizen.Wait(0)
-        local playerPed = PlayerPedId()
-        local pos = GetEntityCoords(playerPed)
-        local pearlLocation = Config.locations.Clam_processing_place
-        local distance = #(pos - pearlLocation)
-        local processarea = false
-        if distance <= 5 then
-            processarea = true
-            ESX.ShowHelpNotification("Press E to start processing the pearls")
-            Wait(50)
-        end
-            if IsControlJustReleased(0, 38) and processarea == true then
-            Processpearls()  
-        else 
-        processarea = false
-        end
-    end
-end)
-
--- TODOD  check if code needs run every tick 
--- TODO test fact game for pearl process
---To do list player who are in clam area.
---TODO MAKE SURE TASKSCNEARIO IS CALCLED IF SOMETHING HAPPENS TO SCRIPT. 
---TODO MAKE SURE SCIRPT CAN HANDLE RESCOURSE CRASH
+-- Ensure the tasks are handled properly if something happens to the script
+-- Ensure the script can handle resource crashes
+--TODO CHECK FOR WATER AND VECHILES IS BROKEN
