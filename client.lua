@@ -5,7 +5,6 @@ local processclams = false
 Citizen.CreateThread(function()
     while true do
         Citizen.Wait(50)
-        print(PickUpClams)
         local playerPed = PlayerPedId()
         local pos = GetEntityCoords(playerPed)
         local clamLocation = Config.locations.clam_pool
@@ -23,17 +22,16 @@ Citizen.CreateThread(function()
 end)
 
 
-
-function DigUpClams()
-    local waitTime = math.random(Config.clamtimer.a, Config.clamtimer.b)
-    PickUpClams = true
-    print(waitTime + " seconds")
-    ESX.Progressbar("Digging up clams", waitTime, {
-        FreezePlayer  = true,
-        label = "Digging up clams",
+function Progressbar(minTime, maxTime, progressBarText, animation, serverEvent,flag)
+    local waitTime = math.random(minTime, maxTime)
+    flag = true  -- Dynamically set the flag using the global table
+    print(waitTime .. " seconds")
+    ESX.Progressbar(progressBarText, waitTime, {
+        FreezePlayer = true,
+        label = progressBarText,
         useWhileDead = false,
         canCancel = true,
-        TaskStartScenarioInPlace(PlayerPedId(), "WORLD_HUMAN_GARDENER_PLANT", 0, true),
+        TaskStartScenarioInPlace(PlayerPedId(), animation, 0, true),
         controlDisables = {
             disableMovement = true,
             disableCarMovement = true,
@@ -41,42 +39,37 @@ function DigUpClams()
             disableCombat = true,
         },
         onFinish = function()
-            TriggerServerEvent('Giveclams')
-            PickUpClams = false
+            TriggerServerEvent(serverEvent)
+            flag = false  -- Reset the flag
+            print(flag)
             ClearPedTasks(PlayerPedId())
         end,
         onCancel = function()
             print("I was canCancel")
-            PickUpClams = false
-            TriggerEvent('PickUpClams:stop')
+            _G[flag] = false  -- Reset the flag
+            TriggerEvent('cancelAction')
         end,
     })
 end
 
 
-RegisterNetEvent('PickUpClams:stop')
-AddEventHandler('PickUpClams:stop', function()
-    print("pick up clams stop is called")
-    PickUpClams = false
+function DigUpClams()
+    Progressbar(Config.clamtimer.a, Config.clamtimer.b, "Digging up clams", "WORLD_HUMAN_GARDENER_PLANT", 'Giveclams',"PickUpClams")
+end
+
+RegisterNetEvent('cancelAction')
+AddEventHandler('cancelAction', function()
+    print("Action is stopped")
     ClearPedTasks(PlayerPedId())
 end)
 
-RegisterNetEvent('PickUpClams:start')
-AddEventHandler('PickUpClams:start', function()
-    local playerPed = PlayerPedId()
 
-    if IsPedInAnyVehicle(playerPed, true) then
-        ESX.ShowAdvancedNotification("You cannot pick up clams while inside a vehicle!")
-    else
-        if IsEntityInWater(playerPed) then
-            PickUpClams = true
-            ESX.ShowNotification("You are picking up clams - Press Backspace again to stop")
-            DigUpClams()
-        else
-            ESX.ShowNotification("You need to be in the water to pick up clams.")
-        end
-    end
-end)  
+
+
+function Processpearls()
+    print('hello')
+    Progressbar(Config.pearlprocesstimer.a, Config.pearlprocesstimer.b, "Openning Clmas", "WORLD_HUMAN_VEHICLE_MECHANIC", 'Pearlprocess',"PickUpClams")
+end
 
 
 -- Pearl part
@@ -84,7 +77,6 @@ end)
 Citizen.CreateThread(function()
     while true do
         Citizen.Wait(0)
-        
         local playerPed = PlayerPedId()
         local pos = GetEntityCoords(playerPed)
         local pearlLocation = Config.locations.Clam_processing_place
@@ -102,38 +94,6 @@ Citizen.CreateThread(function()
         end
     end
 end)
-
-
-function Processpearls()
-    local waitTime = math.random(Config.pearlprocesstimer.a, Config.pearlprocesstimer.b)
-    local playerPed = PlayerPedId()
-    
-    if processclams == false then
-        ESX.Progressbar("Oppening clams", waitTime, {
-            processclams = true,
-            FreezePlayer  = true,
-            label = "Oppening clams",
-            useWhileDead = false,
-            canCancel = true,
-            TaskStartScenarioInPlace(playerPed, "WORLD_HUMAN_BUM_WASH", 0, true),
-            controlDisables = {
-                disableMovement = true,
-                disableCarMovement = true,
-                disableMouse = false,
-                disableCombat = true,
-            },
-            onFinish = function()
-                TriggerServerEvent('Pearlprocess')
-                ClearPedTasks(PlayerPedId())
-            end,
-            onCancel = function()
-                ClearPedTasks(PlayerPedId())
-            end,
-        })
-    else
-        processclams = false 
-    end
-end
 
 -- TODOD  check if code needs run every tick 
 -- TODO test fact game for pearl process

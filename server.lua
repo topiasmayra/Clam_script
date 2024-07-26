@@ -43,15 +43,10 @@ AddEventHandler('Pearlprocess', function()
     local xPlayer = ESX.GetPlayerFromId(source)
     local clams = xPlayer.getInventoryItem('clam').count
     local pearls = xPlayer.getInventoryItem('pearl').count
-    
-    if clams >= 3 then       
+    if clams >= 3 then
         local amount = math.random(1, 3)
         xPlayer.removeInventoryItem('clam', 3)
         xPlayer.addInventoryItem('pearl', amount)
         TriggerClientEvent('esx:showNotification', source(), "You have successfully processed your pear)}")
-        
-    
-
-
     end
 end)

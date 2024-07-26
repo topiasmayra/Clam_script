@@ -13,8 +13,8 @@ Config.clamtimer = {
 }
 
 Config.pearlprocesstimer = {
-    x = 30000, -- Minimum time (in milliseconds)
-    d = 12000 -- Maximum time (in milliseconds)
+    a = 3000, -- Minimum time (in milliseconds)
+    b = 12000 -- Maximum time (in milliseconds)
 }
 
 
