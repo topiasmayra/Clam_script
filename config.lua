@@ -1,5 +1,12 @@
 Config = {}
 
+Config.inputs = {
+    key_true_answer = 44, -- 1
+    key_false_answer = 45,-- 2
+    Pick_up = 38 -- E
+}
+
+
 -- Define the price range for pearls
 Config.PearlPrice = {
     min = 600,   -- Minimum price per pearl in currency
@@ -51,5 +58,209 @@ Config.activityConfigs = {
         inWater = false,
         flag = 'ProcessClams',
         progress = {Config.pearlprocesstimer.a, Config.pearlprocesstimer.b, "Opening Clams", "WORLD_HUMAN_VEHICLE_MECHANIC", 'Pearlprocess'}
+    }
+}
+
+--Facts about Seals 
+Config.sealfacts = {
+    {
+        fact = "Seals are mammals.",
+        isTrue = true
+    },
+    {
+        fact = "All seals live in freshwater habitats.",
+        isTrue = false
+    },
+    {
+        fact = "Seals can hold their breath for up to two hours.",
+        isTrue = true
+    },
+    {
+        fact = "Seals primarily eat plants.",
+        isTrue = false
+    },
+    {
+        fact = "There are more than 30 species of seals.",
+        isTrue = true
+    },
+    {
+        fact = "Seals have fur.",
+        isTrue = true
+    },
+    {
+        fact = "Seals are cold-blooded animals.",
+        isTrue = false
+    },
+    {
+        fact = "Seals can sleep underwater.",
+        isTrue = true
+    },
+    {
+        fact = "All seals have external ears.",
+        isTrue = false
+    },
+    {
+        fact = "Seals communicate through vocalizations and body language.",
+        isTrue = true
+    },
+    {
+        fact = "Seals are also known as pinnipeds.",
+        isTrue = true
+    },
+    {
+        fact = "Some seals can live up to 40 years.",
+        isTrue = true
+    },
+    {
+        fact = "Seals are closely related to dolphins.",
+        isTrue = false
+    },
+    {
+        fact = "Seals can swim at speeds up to 25 miles per hour.",
+        isTrue = true
+    },
+    {
+        fact = "Seals are found in all oceans of the world.",
+        isTrue = true
+    },
+    {
+        fact = "Seals can only live in cold climates.",
+        isTrue = false
+    },
+    {
+        fact = "Seals have a layer of blubber to keep them warm.",
+        isTrue = true
+    },
+    {
+        fact = "Seals give birth on land or ice.",
+        isTrue = true
+    },
+    {
+        fact = "Seals are capable of echolocation.",
+        isTrue = false
+    },
+    {
+        fact = "Seals' whiskers are sensitive to vibrations in the water.",
+        isTrue = true
+    },
+    {
+        fact = "Seals use tools to hunt for food.",
+        isTrue = false
+    },
+    {
+        fact = "Seals can dive to depths of over 1,500 meters.",
+        isTrue = true
+    },
+    {
+        fact = "Seals are nocturnal hunters.",
+        isTrue = true
+    },
+    {
+        fact = "All seal species are endangered.",
+        isTrue = false
+    },
+    {
+        fact = "Seals have been known to eat penguins.",
+        isTrue = true
+    },
+    {
+        fact = "Seals are social animals that live in groups called pods.",
+        isTrue = false
+    },
+    {
+        fact = "Seals molt their fur once a year.",
+        isTrue = true
+    },
+    {
+        fact = "Seals' eyesight is better underwater than on land.",
+        isTrue = true
+    },
+    {
+        fact = "Seals are herbivores.",
+        isTrue = false
+    },
+    {
+        fact = "The largest species of seal is the elephant seal.",
+        isTrue = true
+    },
+    {
+        fact = "Seals cannot hear underwater.",
+        isTrue = false
+    },
+    {
+        fact = "Seals can stay underwater for up to 30 minutes.",
+        isTrue = true
+    },
+    {
+        fact = "Seals use their tails for swimming.",
+        isTrue = false
+    },
+    {
+        fact = "Seals are capable of rapid bursts of speed to catch prey.",
+        isTrue = true
+    },
+    {
+        fact = "Seals live solitary lives except during mating season.",
+        isTrue = false
+    },
+    {
+        fact = "The average lifespan of a seal in the wild is about 20-30 years.",
+        isTrue = true
+    },
+    {
+        fact = "Seals' primary predators are sharks and orcas.",
+        isTrue = true
+    },
+    {
+        fact = "Seals are found in both the Arctic and Antarctic regions.",
+        isTrue = true
+    },
+    {
+        fact = "Seals are born with the ability to swim.",
+        isTrue = false
+    },
+    {
+        fact = "Seals' fur provides camouflage from predators.",
+        isTrue = true
+    },
+    {
+        fact = "Seals can migrate thousands of miles annually.",
+        isTrue = true
+    },
+    {
+        fact = "Seals have been domesticated by humans.",
+        isTrue = false
+    },
+    {
+        fact = "Seals' teeth are adapted for catching and eating fish.",
+        isTrue = true
+    },
+    {
+        fact = "Seals communicate using a variety of sounds, including barks and grunts.",
+        isTrue = true
+    },
+    {
+        fact = "Seals have a highly developed sense of smell.",
+        isTrue = false
+    },
+    {
+        fact = "Seal pups are nursed by their mothers for several months.",
+        isTrue = true
+    },
+    {
+        fact = "Seals can live in both saltwater and freshwater environments.",
+        isTrue = true
+    },
+    {
+        fact = "Seals are known for their playful behavior.",
+        isTrue = true
+    },
+    {
+        fact = "Seals are immune to many marine toxins.",
+        isTrue = false
+    },
+    {
+        fact = "Seals' flippers are used for both swimming and walking on land.",
+        isTrue = true
     }
 }

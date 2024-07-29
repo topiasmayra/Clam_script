@@ -13,11 +13,13 @@ Citizen.CreateThread(function()
 
             if distance <= activity.distance then
                 if activity.inWater and not IsEntityInWater(playerPed) then
-                    --ESX.ShowNotification("You need to be in the water to " .. activity.helpText:lower())
+                    ESX.ShowNotification("You need to be in the water to " .. activity.helpText:lower())
                 else
                     ESX.ShowHelpNotification(activity.helpText, false)
-                    if IsControlJustReleased(0, 38) and not IsEntityDead(playerPed) and not _G[activity.flag] then
-                        TriggerEvent(activity.startEvent)
+                    if IsControlJustReleased(0, Config.inputs.Pick_up) and not IsEntityDead(playerPed) and not _G[activity.flag] then
+                       TriggerEvent(activity.startEvent)
+                       -- TriggerServerEvent('FactGame:RequestQuestion')
+                        --REMOVE THIS AFTER WE KNOW QUESTION LOGIC WORKS
                     end
                 end
             end
@@ -63,8 +65,9 @@ end)
 
 RegisterNetEvent('ProcessPearls:start')
 AddEventHandler('ProcessPearls:start', function()
+    TriggerServerEvent('FactGame:RequestQuestion')
     local config = Config.activityConfigs.pearls.progress
-    Progressbar(config[1], config[2], config[3], config[4], config[5], Config.activityConfigs.pearls.flag)
+    Progressbar(config[1], config[2], currentQuestion, config[4], config[5], Config.activityConfigs.pearls.flag)
 end)
 
 RegisterNetEvent('cancelAction')
@@ -73,6 +76,49 @@ AddEventHandler('cancelAction', function()
     ClearPedTasks(PlayerPedId())
 end)
 
--- Ensure the tasks are handled properly if something happens to the script
+
+
+
+local currentQuestion = nil
+local currentCorrectAnswer = nil
+
+RegisterNetEvent('FactGame:ReceiveQuestion')
+AddEventHandler('FactGame:ReceiveQuestion', function(fact, isTrue)
+    currentQuestion = fact
+    currentCorrectAnswer = isTrue
+    ClearAllHelpMessages()
+    ESX.ShowNotification("Question: " .. fact)
+    
+
+end)
+
+RegisterNetEvent('FactGame:AnswerResult')
+AddEventHandler('FactGame:AnswerResult', function(isCorrect)
+    if isCorrect then
+        ESX.ShowNotification("Correct!",'success')
+    else
+        ESX.ShowNotification("Incorrect!", "error")
+    end
+end)
+
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(0)
+        if currentQuestion then
+            if IsControlJustReleased(0, Config.inputs.key_true_answer) then
+                TriggerServerEvent('FactGame:CheckAnswer', currentQuestion, true)
+                currentQuestion = nil  -- Clear the question after answering
+            elseif IsControlJustReleased(0, Config.inputs.key_false_answer) then
+                TriggerServerEvent('FactGame:CheckAnswer', currentQuestion, false)
+                currentQuestion = nil  -- Clear the question after answering
+            end
+        end
+    end
+end)
+
+
 -- Ensure the script can handle resource crashes
 --TODO CHECK FOR WATER AND VECHILES IS BROKEN
+-- READ https://forum.cfx.re/t/help-add-markers-to-map-blips/108199/3
+-- TODO ADD LOGIC FOR PROGRESS BAR SO YOU HAVE X AMOUNT TIME FOR ANSWERIGN QUESTION
+--FIX WHY DOS NOT TELL YOU IF YOU HAVE ENOUGHT CLAMS TO PROCESS before progress bar starts
