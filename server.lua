@@ -5,7 +5,7 @@ end)
 
 RegisterNetEvent('Giveclams')
 AddEventHandler('Giveclams', function()
-    local amount = math.random(Config.amount.a, Conig.amount.b)
+    local amount = math.random(Config.amount.a, Config.amount.b)
     if ESX.GetPlayerFromId(source).canCarryItem('clam', amount)then
         TriggerClientEvent('esx:showNotification', source, "You found clams: " .. amount)
         ESX.GetPlayerFromId(source).addInventoryItem('clam', amount)

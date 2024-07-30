@@ -20,8 +20,7 @@ Config.clamtimer = {
 }
 
 Config.pearlprocesstimer = {
-    a = 3000, -- Minimum time (in milliseconds)
-    b = 12000 -- Maximum time (in milliseconds)
+    a = 2000
 }
 
 
@@ -57,7 +56,6 @@ Config.activityConfigs = {
         helpText = "Press E to start processing the pearls",
         inWater = false,
         flag = 'ProcessClams',
-        progress = {Config.pearlprocesstimer.a, Config.pearlprocesstimer.b, "Opening Clams", "WORLD_HUMAN_VEHICLE_MECHANIC", 'Pearlprocess'}
     }
 }
 

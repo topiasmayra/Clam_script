@@ -1,6 +1,8 @@
 local PickUpClams = false
 local ProcessClams = false
-
+local questionTimer = 0
+local questionDuration = Config.pearlprocesstimer.a  -- 20 seconds in milliseconds
+local questionAnswered = false
 -- Main Thread Handling Input and State for All Activities
 Citizen.CreateThread(function()
     while true do
@@ -12,14 +14,13 @@ Citizen.CreateThread(function()
             local distance = #(pos - activity.location)
 
             if distance <= activity.distance then
-                if activity.inWater and not IsEntityInWater(playerPed) then
+                if  activity.inWater and not IsEntityInWater(playerPed) then
                     ESX.ShowNotification("You need to be in the water to " .. activity.helpText:lower())
                 else
                     ESX.ShowHelpNotification(activity.helpText, false)
                     if IsControlJustReleased(0, Config.inputs.Pick_up) and not IsEntityDead(playerPed) and not _G[activity.flag] then
                         TriggerEvent(activity.startEvent)
-                       TriggerServerEvent('FactGame:RequestQuestion')
-                        --REMOVE THIS AFTER WE KNOW QUESTION LOGIC WORKS
+                        
                     end
                 end
             end
@@ -31,7 +32,6 @@ end)
 function Progressbar(minTime, maxTime, progressBarText, animation, serverEvent, flagName)
     local waitTime = math.random(minTime, maxTime)
     _G[flagName] = true  -- Dynamically set the flag using the global table
-    print(waitTime .. " seconds")
     ESX.Progressbar(progressBarText, waitTime, {
         FreezePlayer = true,
         label = progressBarText,
@@ -48,10 +48,8 @@ function Progressbar(minTime, maxTime, progressBarText, animation, serverEvent, 
             TriggerServerEvent(serverEvent)
             _G[flagName] = false  -- Reset the flag
             ClearPedTasks(PlayerPedId())
-            CurrentQuestion = nil
         end,
         onCancel = function()
-            print("Action was cancelled")
             _G[flagName] = false  -- Reset the flag
             TriggerEvent('cancelAction')
         end,
@@ -64,36 +62,29 @@ AddEventHandler('PickUpClams:start', function()
     Progressbar(config[1], config[2], config[3], config[4], config[5], Config.activityConfigs.clams.flag)
 end)
 
-
--- Request question function
-local function requestQuestion(callback)
-    RegisterNetEvent('FactGame:ReceiveQuestion')
-    AddEventHandler('FactGame:ReceiveQuestion', function(fact, isTrue)  
-        if callback then
-            callback(fact, isTrue)
-        end
-    end)
-    TriggerServerEvent('FactGame:RequestQuestion')
-end
-
--- Process Pearls event
-RegisterNetEvent('ProcessPearls:start')
-AddEventHandler('ProcessPearls:start', function()
-    requestQuestion(function(question, isTrue)
-        print("Question: " .. question)
-        CurrentQuestion = question
-        
-        local config = Config.activityConfigs.pearls.progress
-        Progressbar(config[1], config[2], question, config[4], config[5], Config.activityConfigs.pearls.flag)
-    end)
-end)
-
-
 RegisterNetEvent('cancelAction')
 AddEventHandler('cancelAction', function()
     print("Action is stopped")
     ClearPedTasks(PlayerPedId())
-    CurrentQuestion = nil
+end)
+
+
+RegisterNetEvent('ProcessPearls:start')
+AddEventHandler('ProcessPearls:start', function()
+
+TriggerServerEvent('FactGame:RequestQuestion')
+end)
+
+
+
+
+RegisterNetEvent('FactGame:ReceiveQuestion')
+AddEventHandler('FactGame:ReceiveQuestion', function(fact, isTrue)
+    currentQuestion = fact
+    currentCorrectAnswer = isTrue
+    questionTimer = GetGameTimer() + questionDuration
+    questionAnswered = false
+    ESX.ShowNotification("Question: " .. fact, "info", questionDuration)
 end)
 
 
@@ -101,29 +92,44 @@ RegisterNetEvent('FactGame:AnswerResult')
 AddEventHandler('FactGame:AnswerResult', function(isCorrect)
     if isCorrect then
         ESX.ShowNotification("Correct!",'success')
+        questionAnswered = true
+        TriggerServerEvent('Pearlprocess')
     else
         ESX.ShowNotification("Incorrect!", "error")
+        questionAnswered = true
+
+
     end
 end)
 
 Citizen.CreateThread(function()
     while true do
         Citizen.Wait(0)
-        if CurrentQuestion then
+
+        -- Check if there's a current question
+        if currentQuestion then
+            -- Handle user input
             if IsControlJustReleased(0, Config.inputs.key_true_answer) then
-                print("True key pressed")
-                TriggerServerEvent('FactGame:CheckAnswer', CurrentQuestion, true)
-                CurrentQuestion = nil  -- Clear the question after answering
+                TriggerServerEvent('FactGame:CheckAnswer', currentQuestion, true)
+                TriggerEvent('cancelAction')
+                
             elseif IsControlJustReleased(0, Config.inputs.key_false_answer) then
-                TriggerServerEvent('FactGame:CheckAnswer', CurrentQuestion, false)
-                CurrentQuestion = nil  -- Clear the question after answering
+                TriggerServerEvent('FactGame:CheckAnswer', currentQuestion, false)
+                TriggerEvent('cancelAction')
+            end
+
+            -- Check if the time has expired
+            if GetGameTimer() > questionTimer and not questionAnswered  then
+                ESX.ShowNotification("Time is up! Your brain was too slow.", "error")
+                currentQuestion = nil  -- Clear the question after time expires
+                TriggerEvent('cancelAction')
             end
         end
     end
 end)
 
+
 -- Ensure the script can handle resource crashes
 --TODO CHECK FOR WATER AND VECHILES IS BROKEN
 -- READ https://forum.cfx.re/t/help-add-markers-to-map-blips/108199/3
--- TODO ADD LOGIC FOR PROGRESS BAR SO YOU HAVE X AMOUNT TIME FOR ANSWERIGN QUESTION
 --FIX WHY DOS NOT TELL YOU IF YOU HAVE ENOUGHT CLAMS TO PROCESS before progress bar starts
