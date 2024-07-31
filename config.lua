@@ -21,7 +21,9 @@ Config.clamtimer = {
 
 Config.pearlprocesstimer = {
     timer = 2000,
-    a = 
+    a = 3000,    
+    b = 90000
+
 }
 
 
@@ -54,7 +56,7 @@ Config.activityConfigs = {
     },
     pearls = {
         location = Config.locations.Clam_processing_place,
-        distance = 5.0,
+        distance = 0.5,
         startEvent = 'ProcessPearls:start',
         helpText = "Press E to start processing the pearls",
         inWater = false,
