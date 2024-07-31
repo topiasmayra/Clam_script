@@ -20,13 +20,16 @@ Config.clamtimer = {
 }
 
 Config.pearlprocesstimer = {
-    a = 2000
+    timer = 2000,
+    a = 
 }
 
 
 Config.amount = {
     a = 1,
-    b = 5
+    b = 5,
+    c = 2,
+    pearl_process_tax = 2
 }
 
 -- Percentage of clams returned when opened at a different location (30%)

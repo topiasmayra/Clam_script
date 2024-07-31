@@ -15,24 +15,10 @@ AddEventHandler('Giveclams', function()
 end)
 
 
+
 ESX.RegisterUsableItem('pearl', function(source)
     local xPlayer = ESX.GetPlayerFromId(source)
     TriggerClientEvent('esx:showNotification', source, "You can't eat pearls.")
-end)
-
-RegisterNetEvent('Pearlprocess')
-AddEventHandler('Pearlprocess', function()
-    local xPlayer = ESX.GetPlayerFromId(source)
-    local clams = xPlayer.getInventoryItem('clam').count
-    local amount = math.random(1, 3)
-   
-    if clams >= 3 and  ESX.GetPlayerFromId(source).canCarryItem('pearl',amount) then
-        xPlayer.removeInventoryItem('clam', 3)
-        xPlayer.addInventoryItem('pearl', amount)
-        TriggerClientEvent('esx:showNotification', source, "You have successfully processed your clams into pearls and received " .. amount .. " pearls.")
-    else
-        TriggerClientEvent('esx:showNotification', source, "You don't have enough clams to process.")
-    end
 end)
 
 
@@ -67,5 +53,28 @@ AddEventHandler('FactGame:CheckAnswer', function(fact, playerAnswer)
     end
 end)
 
---TODO IF PLAYER ANSWER QUESTION CORRECTLY IT WILL INGREASE THEIR LUCK FOR PROGERSSING PEARLS
---TODO IF PLAYER ANSWER QUESTION INCORRECTLY IT WILL DECREASE THEIR LUCK FOR PROGERSSING PEARLS
+--pearl prosessing 
+
+
+
+RegisterNetEvent('Pearlprocess:successfullyProcessed')
+AddEventHandler('Pearlprocess', function()
+    local xPlayer = ESX.GetPlayerFromId(source)
+    local clams = xPlayer.getInventoryItem('clam').count
+    local amount = math.random(Config.amount.a, Config.amount.c)
+    local clams_amount_for_process = Config.amount.pearl_process_tax
+   
+    if clams >= clams_amount_for_process and  ESX.GetPlayerFromId(source).canCarryItem('pearl',amount) then
+        xPlayer.removeInventoryItem('clam', clams_amount_for_process)
+        xPlayer.addInventoryItem('pearl', amount)
+        TriggerClientEvent('esx:showNotification', source, "You have successfully processed your clams into pearls and received " .. amount .. " pearls.")
+    else
+        TriggerClientEvent('esx:showNotification', source, "You don't have enough clams to process.")
+    end
+end)
+
+
+
+
+--TODO IF PLAYER ANSWER QUESTION CORRECTLY IT  you get 1 or 2 pearls times more pearls
+--TODO IF PLAYER ANSWER QUESTION INCORRECTLY you will lose 2  pearls 

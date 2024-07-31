@@ -20,7 +20,6 @@ Citizen.CreateThread(function()
                     ESX.ShowHelpNotification(activity.helpText, false)
                     if IsControlJustReleased(0, Config.inputs.Pick_up) and not IsEntityDead(playerPed) and not _G[activity.flag] then
                         TriggerEvent(activity.startEvent)
-                        
                     end
                 end
             end
@@ -55,6 +54,19 @@ function Progressbar(minTime, maxTime, progressBarText, animation, serverEvent, 
         end,
     })
 end
+function DisableAllActions()
+    actions_to_disable = {
+        Config.inputs.key_true_answer
+        key_false_answer',
+        'Pick_up'
+    }
+    for _, action in ipairs(actions_to_disable) do
+        local control = Config.inputs[action]
+        if control then
+            DisableControlAction(0, control, true)
+
+
+
 
 RegisterNetEvent('PickUpClams:start')
 AddEventHandler('PickUpClams:start', function()
@@ -131,5 +143,23 @@ end)
 
 -- Ensure the script can handle resource crashes
 --TODO CHECK FOR WATER AND VECHILES IS BROKEN
+--TODO OPTIMIZE CODE 
+--TODO MAKE RESCOURSE SLEEP UNTIL TIMERS HAVE EXPIRED AND 
+
+--------------------
+
+--PEARLS PROSESSING
+
+--------------------
+
+-- TODO Disable compat and moment for questin asnwer part 
+-- FIX WHY DOS NOT TELL YOU IF YOU HAVE ENOUGHT CLAMS TO PROCESS before progress bar starts
+-- TODO MAKE PUNISHMENT TIMER IF YOU GET QUESTION WRONG THAT IS RANDOM  sleep wait make 2 of it if answer correct
+-- CHECK SERVER SIDE NOTES FOR LUCK PART 
+
+
+
+
+------------------------
 -- READ https://forum.cfx.re/t/help-add-markers-to-map-blips/108199/3
---FIX WHY DOS NOT TELL YOU IF YOU HAVE ENOUGHT CLAMS TO PROCESS before progress bar starts
+
