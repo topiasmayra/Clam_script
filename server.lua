@@ -1,32 +1,45 @@
--- Utility function to handle inventory transactions
-    local function processItems(PlayerId, inputItem, inputAmount, outputItem, outputAmountRange, successMessage, removeOnFailure, outputOnFailure)
-        local xPlayer = ESX.GetPlayerFromId(PlayerId)
-        if not xPlayer then
-            print('Error: Player not found with ID ' .. tostring(PlayerId))
-            return
+local function processItems(PlayerId, inputItem, inputAmount, outputItem, outputAmountRange, successMessage, removeOnFailure, outputOnFailure)
+    local xPlayer = ESX.GetPlayerFromId(PlayerId)
+    if not xPlayer then
+        print('Error: Player not found with ID ' .. tostring(PlayerId))
+        return
+    end
+
+    local item = xPlayer.getInventoryItem(inputItem)
+    local itemCount = item and item.count or 0
+    local outputAmount = math.random(outputAmountRange.a, outputAmountRange.b)
+
+    -- Check if the player has enough of the input item (clams)
+    if itemCount < inputAmount then
+        TriggerClientEvent('esx:showNotification', PlayerId, "You don't have enough " .. inputItem .. "(s) to process.")
+        return
+    end
+
+    -- Check if the player can carry the output item
+    if not xPlayer.canCarryItem(outputItem, outputAmount) then
+        TriggerClientEvent('esx:showNotification', PlayerId, "You don't have enough space in your inventory to carry the " .. outputItem .. "(s).")
+        return
+    end
+
+    -- Process the item exchange if the player has enough items and can carry the output
+    if itemCount >= inputAmount then
+        if inputItem then
+            xPlayer.removeInventoryItem(inputItem, inputAmount)
         end
-    
-        local item = xPlayer.getInventoryItem(inputItem)
-        local itemCount = item and item.count or 0
-        local outputAmount = math.random(outputAmountRange.a, outputAmountRange.b)
-    
-        if itemCount >= inputAmount and xPlayer.canCarryItem(outputItem, outputAmount) then
-            if inputItem then
-                xPlayer.removeInventoryItem(inputItem, inputAmount)
-            end
-            if outputItem then
-                xPlayer.addInventoryItem(outputItem, outputAmount)
-                TriggerClientEvent('esx:showNotification', PlayerId, successMessage .. outputAmount .. " " .. outputItem .. "(s).")
-            else
-                TriggerClientEvent('esx:showNotification', PlayerId, successMessage)
-            end
+        if outputItem then
+            xPlayer.addInventoryItem(outputItem, outputAmount)
+            TriggerClientEvent('esx:showNotification', PlayerId, successMessage .. outputAmount .. " " .. outputItem .. "(s).")
         else
-            if removeOnFailure and itemCount >= outputOnFailure then
-                xPlayer.removeInventoryItem(inputItem, outputOnFailure)
-                TriggerClientEvent('esx:showNotification', PlayerId, "You lost " .. outputOnFailure .. " " .. inputItem .. "(s).")
-            end
+            TriggerClientEvent('esx:showNotification', PlayerId, successMessage)
+        end
+    else
+        -- Handle failure scenario
+        if removeOnFailure and itemCount >= outputOnFailure then
+            xPlayer.removeInventoryItem(inputItem, outputOnFailure)
+            TriggerClientEvent('esx:showNotification', PlayerId, "You lost " .. outputOnFailure .. " " .. inputItem .. "(s).")
         end
     end
+end
     
     
     -- Event handlers
@@ -48,9 +61,9 @@
     
     RegisterNetEvent('FactGame:GivePearlsWrongAnswer')
     AddEventHandler('FactGame:GivePearlsWrongAnswer', function(PlayerId)
-        processItems(PlayerId, 'clam', Config.amount.pearl_process_tax, 'pearl', {a = 0, b = 0}, "", "", true, Config.amount.pearl_process_tax)
+        processItems(PlayerId, 'clam', Config.amount.pearl_process_tax, 'pearl', {a = 0, b = 0}, "You found" , "", true, Config.amount.pearl_process_tax)
     end)
-    
+
     RegisterNetEvent('FactGame:RequestQuestion')
     AddEventHandler('FactGame:RequestQuestion', function()
         local PlayerId = source
@@ -83,4 +96,3 @@
             TriggerEvent('FactGame:GivePearlsWrongAnswer', PlayerId)
         end
     end)
-    

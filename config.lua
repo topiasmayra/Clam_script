@@ -34,8 +34,6 @@ Config.amount = {
     pearl_process_tax = 2
 }
 
--- Percentage of clams returned when opened at a different location (30%)
-Config.ClamReturnPercentage = 30
 
 -- Define  locations for clams pools and pearl process palace
 Config.locations = {
@@ -43,12 +41,21 @@ Config.locations = {
     clam_pool = vector3(-3114.4387, 8.2212, -2.4179) 
 }
 
+local keyNames = {
+    [38] = "E",
+    [44] = "Q",
+    [45] = "R",
+    -- Add more key mappings as needed
+}
+
+
+
 Config.activityConfigs = {
     clams = {
         location = Config.locations.clam_pool,
         distance = 40.0,
         startEvent = 'PickUpClams:start',
-        helpText = "Press E to pick up some clams",
+        helpText = "Press "  .. keyNames[Config.inputs.Pick_up] .. " to pick up some clams",
         water = "to pick up some clams",
         inWater = true,
         flag = 'PickUpClams',
@@ -58,7 +65,7 @@ Config.activityConfigs = {
         location = Config.locations.Clam_processing_place,
         distance = 0.5,
         startEvent = 'ProcessPearls:start',
-        helpText = "Press E to start processing the pearls",
+        helpText = "Press " ..keyNames[Config.inputs.Pick_up] .. " to start processing the pearls",
         inWater = false,
         flag = 'ProcessClams',
     }

@@ -13,7 +13,7 @@ local isPunished = false  -- Flag to track if the player is under punishment
 -- Main Thread Handling Input and State for All Activities
 Citizen.CreateThread(function()
     while true do
-        Citizen.Wait(100) -- Polling interval
+        Citizen.Wait(50) -- Polling interval
 
         -- Only proceed if no action or timer is active
         if not actionInProgress and not isPunished then
@@ -27,7 +27,9 @@ Citizen.CreateThread(function()
                         ESX.ShowNotification("You need to be in the water to " .. activity.helpText:lower())
                     else
                         ESX.ShowHelpNotification(activity.helpText, false)
-                        if IsControlJustReleased(0, Config.inputs.Pick_up) and not IsEntityDead(playerPed) and not _G[activity.flag] then
+                        
+                        
+                        if IsControlPressed(0, Config.inputs.Pick_up) and not IsEntityDead(playerPed) and not _G[activity.flag] then
                             TriggerEvent(activity.startEvent)
                             actionInProgress = true  -- Set flag to true when an action starts
                         end
@@ -92,57 +94,91 @@ AddEventHandler('ProcessPearls:start', function()
     end
 end)
 
+local firstQuestion = true -- Track if it's the first question
+
 RegisterNetEvent('FactGame:ReceiveQuestion')
 AddEventHandler('FactGame:ReceiveQuestion', function(fact, isTrue)
     currentQuestion = fact
     currentCorrectAnswer = isTrue
-    questionTimer = GetGameTimer() + questionDuration
+
+    if firstQuestion then
+        questionTimer = GetGameTimer() + questionDuration + 5000 -- Give extra 5 seconds for the first question
+        firstQuestion = false
+
+        ESX.ShowAdvancedNotification("Quiz Game Controls", "Quick Guide", 
+        "Welcome to the quiz game! Here's how you play:\n\n" ..
+        "• Press [~g~E~s~] to answer ~b~TRUE~s~.\n" ..
+        "• Press [~r~Q~s~] to answer ~r~FALSE~s~.\n" ..
+        "• Take your time, especially on the first question!",
+        "CHAR_ANTONIA", 2, true, true, 140)
+        DisableAllControlActions(0)
+        -- Wait for 3 seconds (3000 milliseconds) before showing the first question
+        Citizen.Wait(1000)
+
+        -- Show the first question with an extended duration
+        ESX.ShowNotification("Here's your first question! Take your time.\nQuestion: " .. fact, "info", questionDuration + 5000)
+
+
+    else
+        questionTimer = GetGameTimer() + questionDuration
+        ESX.ShowNotification("Quick! Answer this: " .. fact, "info", questionDuration)
+    end
+
     questionAnswered = false
-    ESX.ShowNotification("Question: " .. fact, "info", questionDuration)
+    TaskStartScenarioInPlace(PlayerPedId(), 'WORLD_HUMAN_HAMMERING', 0, true) -- Play animation while processing
 end)
 
 RegisterNetEvent('FactGame:AnswerResult')
 AddEventHandler('FactGame:AnswerResult', function(isCorrect)
+    ClearPedTasks(PlayerPedId()) -- Stop animation when the answer is received
+
     if isCorrect then
-        ESX.ShowNotification("Correct!", 'success')
-        questionAnswered = true
+        ESX.ShowNotification("Correct! Good job.", 'success')
     else
-        ESX.ShowNotification("Incorrect!", "error")
-        questionAnswered = true
+        ESX.ShowNotification("Incorrect! Better luck next time.", "error")
         punishmentTimer = GetGameTimer() + math.random(Config.pearlprocesstimer.a, Config.pearlprocesstimer.b)
-        isPunished = true  -- Set punishment flag to true
+        isPunished = true
     end
+
+    questionAnswered = true
 end)
 
--- Thread to handle question responses, timeouts, and punishment
 Citizen.CreateThread(function()
     while true do
-        Citizen.Wait(0)
+        Citizen.Wait(5)
 
-        -- Check if there's a current question
         if currentQuestion then
-            -- Handle user input for answering the question
             if IsControlJustReleased(0, Config.inputs.key_true_answer) then
+                DisableAllControlActions(0)
                 TriggerServerEvent('FactGame:CheckAnswer', currentQuestion, true)
                 TriggerEvent('cancelAction')
+                currentQuestion = nil
             elseif IsControlJustReleased(0, Config.inputs.key_false_answer) then
+                DisableAllControlActions(0)
                 TriggerServerEvent('FactGame:CheckAnswer', currentQuestion, false)
                 TriggerEvent('cancelAction')
+                currentQuestion = nil
             end
 
-            -- Handle question timeout
             if GetGameTimer() > questionTimer and not questionAnswered then
-                ESX.ShowNotification("Time is up! Your brain was too slow.", "error")
-                currentQuestion = nil  -- Clear the question after time expires
+                ESX.ShowNotification("Time is up! You missed the chance.", "error")
+                punishmentTimer = GetGameTimer() + math.random(Config.pearlprocesstimer.a, Config.pearlprocesstimer.b)
+                isPunished = true
+                currentQuestion = nil
                 TriggerEvent('cancelAction')
                 TriggerServerEvent('FactGame:GivePearlsWrongAnswer')
             end
         end
 
-        -- Handle punishment timer
+        if isPunished and IsControlJustReleased(0, Config.inputs.Pick_up) then
+            ESX.ShowNotification("You're too tired to continue right now. Rest for a bit.")
+        end
+
         if isPunished and GetGameTimer() > punishmentTimer then
-            isPunished = false  -- Reset the punishment flag
-            ESX.ShowNotification("You can now process pearls again.", "success")
+            isPunished = false
+            ESX.ShowNotification("You're feeling better. You can process pearls again.", "success")
         end
     end
 end)
+
+-- Make Clam pick up more resource effective (0.8ms per clam)
