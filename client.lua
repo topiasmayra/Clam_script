@@ -1,31 +1,48 @@
+-- Define global flags and state variables
 local PickUpClams = false
-local processclams = false
+local ProcessClams = false
+local questionTimer = 0
+local questionDuration = Config.pearlprocesstimer.timer -- Duration for the question
+local questionAnswered = false
+local punishmentTimer = 0
+local currentQuestion = nil
+local currentCorrectAnswer = nil
+local actionInProgress = false  -- Flag to track if an action is in progress
+local isPunished = false  -- Flag to track if the player is under punishment
 
--- Main Thread Handling Input and State
+-- Main Thread Handling Input and State for All Activities
 Citizen.CreateThread(function()
     while true do
-        Citizen.Wait(50)
-        local playerPed = PlayerPedId()
-        local pos = GetEntityCoords(playerPed)
-        local clamLocation = Config.locations.clam_pool
-        local distance = #(pos - clamLocation)
+        Citizen.Wait(100) -- Polling interval
 
-        if IsControlJustReleased(0, 38)  and not IsEntityDead(playerPed) and IsEntityInWater(playerPed) then
-            if distance <= 40.0 and PickUpClams == false then 
-                ESX.ShowHelpNotification("Press E to pick up some clams", false)
-                    TriggerServerEvent('PickUpClams') 
-            else
-            ESX.ShowNotification("You are not nearby a clam area")
-            end        
-        end   
+        -- Only proceed if no action or timer is active
+        if not actionInProgress and not isPunished then
+            local playerPed = PlayerPedId()
+            local pos = GetEntityCoords(playerPed)
+            for _, activity in pairs(Config.activityConfigs) do
+                local distance = #(pos - activity.location)
+
+                if distance <= activity.distance then
+                    if activity.inWater and not IsEntityInWater(playerPed) then
+                        ESX.ShowNotification("You need to be in the water to " .. activity.helpText:lower())
+                    else
+                        ESX.ShowHelpNotification(activity.helpText, false)
+                        if IsControlJustReleased(0, Config.inputs.Pick_up) and not IsEntityDead(playerPed) and not _G[activity.flag] then
+                            TriggerEvent(activity.startEvent)
+                            actionInProgress = true  -- Set flag to true when an action starts
+                        end
+                    end
+                end
+            end
         end
+    end
 end)
 
-
-function Progressbar(minTime, maxTime, progressBarText, animation, serverEvent,flag)
+-- Generic Progressbar Function
+function Progressbar(minTime, maxTime, progressBarText, animation, serverEvent, flagName)
     local waitTime = math.random(minTime, maxTime)
-    flag = true  -- Dynamically set the flag using the global table
-    print(waitTime .. " seconds")
+    _G[flagName] = true  -- Dynamically set the flag using the global table
+    actionInProgress = true  -- Set flag to true when an action starts
     ESX.Progressbar(progressBarText, waitTime, {
         FreezePlayer = true,
         label = progressBarText,
@@ -40,63 +57,92 @@ function Progressbar(minTime, maxTime, progressBarText, animation, serverEvent,f
         },
         onFinish = function()
             TriggerServerEvent(serverEvent)
-            flag = false  -- Reset the flag
-            print(flag)
+            _G[flagName] = false  -- Reset the flag
+            actionInProgress = false  -- Reset the action flag
             ClearPedTasks(PlayerPedId())
         end,
         onCancel = function()
-            print("I was canCancel")
-            _G[flag] = false  -- Reset the flag
+            _G[flagName] = false  -- Reset the flag
+            actionInProgress = false  -- Reset the action flag
             TriggerEvent('cancelAction')
         end,
     })
 end
 
-
-function DigUpClams()
-    Progressbar(Config.clamtimer.a, Config.clamtimer.b, "Digging up clams", "WORLD_HUMAN_GARDENER_PLANT", 'Giveclams',"PickUpClams")
-end
+-- Event handlers for actions
+RegisterNetEvent('PickUpClams:start')
+AddEventHandler('PickUpClams:start', function()
+    local config = Config.activityConfigs.clams.progress
+    Progressbar(config[1], config[2], config[3], config[4], config[5], Config.activityConfigs.clams.flag)
+end)
 
 RegisterNetEvent('cancelAction')
 AddEventHandler('cancelAction', function()
     print("Action is stopped")
     ClearPedTasks(PlayerPedId())
+    actionInProgress = false  -- Reset the action flag
 end)
 
-
-
-
-function Processpearls()
-    print('hello')
-    Progressbar(Config.pearlprocesstimer.a, Config.pearlprocesstimer.b, "Openning Clmas", "WORLD_HUMAN_VEHICLE_MECHANIC", 'Pearlprocess',"PickUpClams")
-end
-
-
--- Pearl part
-
-Citizen.CreateThread(function()
-    while true do
-        Citizen.Wait(0)
-        local playerPed = PlayerPedId()
-        local pos = GetEntityCoords(playerPed)
-        local pearlLocation = Config.locations.Clam_processing_place
-        local distance = #(pos - pearlLocation)
-        local processarea = false
-        if distance <= 5 then
-            processarea = true
-            ESX.ShowHelpNotification("Press E to start processing the pearls")
-            Wait(50)
-        end
-            if IsControlJustReleased(0, 38) and processarea == true then
-            Processpearls()  
-        else 
-        processarea = false
-        end
+RegisterNetEvent('ProcessPearls:start')
+AddEventHandler('ProcessPearls:start', function()
+    if not isPunished then
+        TriggerServerEvent('FactGame:RequestQuestion')
+    else
+        ESX.ShowNotification("You must wait until your punishment timer expires before processing pearls.", "error")
     end
 end)
 
--- TODOD  check if code needs run every tick 
--- TODO test fact game for pearl process
---To do list player who are in clam area.
---TODO MAKE SURE TASKSCNEARIO IS CALCLED IF SOMETHING HAPPENS TO SCRIPT. 
---TODO MAKE SURE SCIRPT CAN HANDLE RESCOURSE CRASH
+RegisterNetEvent('FactGame:ReceiveQuestion')
+AddEventHandler('FactGame:ReceiveQuestion', function(fact, isTrue)
+    currentQuestion = fact
+    currentCorrectAnswer = isTrue
+    questionTimer = GetGameTimer() + questionDuration
+    questionAnswered = false
+    ESX.ShowNotification("Question: " .. fact, "info", questionDuration)
+end)
+
+RegisterNetEvent('FactGame:AnswerResult')
+AddEventHandler('FactGame:AnswerResult', function(isCorrect)
+    if isCorrect then
+        ESX.ShowNotification("Correct!", 'success')
+        questionAnswered = true
+    else
+        ESX.ShowNotification("Incorrect!", "error")
+        questionAnswered = true
+        punishmentTimer = GetGameTimer() + math.random(Config.pearlprocesstimer.a, Config.pearlprocesstimer.b)
+        isPunished = true  -- Set punishment flag to true
+    end
+end)
+
+-- Thread to handle question responses, timeouts, and punishment
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(0)
+
+        -- Check if there's a current question
+        if currentQuestion then
+            -- Handle user input for answering the question
+            if IsControlJustReleased(0, Config.inputs.key_true_answer) then
+                TriggerServerEvent('FactGame:CheckAnswer', currentQuestion, true)
+                TriggerEvent('cancelAction')
+            elseif IsControlJustReleased(0, Config.inputs.key_false_answer) then
+                TriggerServerEvent('FactGame:CheckAnswer', currentQuestion, false)
+                TriggerEvent('cancelAction')
+            end
+
+            -- Handle question timeout
+            if GetGameTimer() > questionTimer and not questionAnswered then
+                ESX.ShowNotification("Time is up! Your brain was too slow.", "error")
+                currentQuestion = nil  -- Clear the question after time expires
+                TriggerEvent('cancelAction')
+                TriggerServerEvent('FactGame:GivePearlsWrongAnswer')
+            end
+        end
+
+        -- Handle punishment timer
+        if isPunished and GetGameTimer() > punishmentTimer then
+            isPunished = false  -- Reset the punishment flag
+            ESX.ShowNotification("You can now process pearls again.", "success")
+        end
+    end
+end)
