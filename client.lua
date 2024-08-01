@@ -1,35 +1,93 @@
--- Define global flags and state variables
-local PickUpClams = false
-local ProcessClams = false
-local questionTimer = 0
-local questionDuration = Config.pearlprocesstimer.timer -- Duration for the question
-local questionAnswered = false
-local punishmentTimer = 0
+-- Global variables
+local playerPed = PlayerPedId()
+local playerPos = GetEntityCoords(playerPed)
+local debounceInterval = 300 -- milliseconds
+local lastInputTime = 0
+local lastNotificationTime = 0
+
+-- Flags and timers
+local flags = {
+    PickUpClams = false,
+    ProcessClams = false,
+    actionInProgress = false,
+    isPunished = false
+}
+
+local timers = {
+    questionTimer = 0,
+    questionDuration = Config.pearlprocesstimer.timer,
+    punishmentTimer = 0
+    
+}
+
 local currentQuestion = nil
 local currentCorrectAnswer = nil
-local actionInProgress = false  -- Flag to track if an action is in progress
-local isPunished = false  -- Flag to track if the player is under punishment
+local questionAnswered = false
+local firstQuestion = true
 
--- Main Thread Handling Input and State for All Activities
+-- Cached Configuration Data
+local cachedConfig = {
+    pearlSellingLocation = Config.activityConfigs.pearlSelling.location,
+    clamProgressConfig = Config.activityConfigs.clams.progress,
+    pearlModelHash = GetHashKey('a_f_m_fatcult_01'),
+    activityConfigs = Config.activityConfigs
+}
+
+-- Optimized function to check if player is near an activity
+local function isPlayerNearActivity(activity)
+    local location = activity.location
+    local distanceSquared = (playerPos.x - location.x) ^ 2 + (playerPos.y - location.y) ^ 2 + (playerPos.z - location.z) ^ 2
+    local distanceThresholdSquared = activity.distance ^ 2
+    return distanceSquared <= distanceThresholdSquared
+end
+
+
+-- Notification cooldown
+local notificationCooldown = 5000 -- milliseconds
+local lastNotificationTime = 0 -- Initialize lastNotificationTime
+
+-- Utility function to show notification with cooldown
+local function showNotification(message, type)
+    local currentTime = GetGameTimer()
+
+    -- Ensure lastNotificationTime is initialized
+    if lastNotificationTime == nil then
+        lastNotificationTime = currentTime
+    end
+
+    -- Check if enough time has passed since the last notification
+    if currentTime - lastNotificationTime > notificationCooldown then
+        ESX.ShowNotification(message, type)
+        lastNotificationTime = currentTime -- Update lastNotificationTime
+    end
+end
+
+
+-- Optimized thread for handling inputs and activity locations
 Citizen.CreateThread(function()
+    local function isPlayerInWater()
+        return IsEntityInWater(playerPed)
+    end
+
     while true do
-        Citizen.Wait(50) -- Polling interval
+        Citizen.Wait(100) -- Adjusted polling interval
 
-        local playerPed = PlayerPedId()
-        local pos = GetEntityCoords(playerPed)
+        playerPos = GetEntityCoords(playerPed) -- Cache player position
 
-        for _, activity in pairs(Config.activityConfigs) do
-            local distance = #(pos - activity.location) -- Ensure activity.location is a vector3
+        -- Handle activity locations
+        for activityName, activity in pairs(cachedConfig.activityConfigs) do
+            if isPlayerInWater() or not activity.inWater then
+                if isPlayerNearActivity(activity) then
+                    if activity.inWater and not isPlayerInWater() then
+                        showNotification("You need to be in the water to " .. activity.helpText:lower(), "info")
+                    else
+                        showNotification(activity.helpText, "info")
 
-            if distance <= activity.distance then
-                if activity.inWater and not IsEntityInWater(playerPed) then
-                    ESX.ShowNotification("You need to be in the water to " .. activity.helpText:lower())
-                else
-                    ESX.ShowHelpNotification(activity.helpText, false)
-
-                    if IsControlJustReleased(0, Config.inputs.Pick_up) and not IsEntityDead(playerPed) and not _G[activity.flag] then
-                        TriggerEvent(activity.startEvent)
-                        actionInProgress = true  -- Set flag to true when an action starts
+                        if IsControlJustReleased(0, Config.inputs.Pick_up) and GetGameTimer() - lastInputTime > debounceInterval then
+                            lastInputTime = GetGameTimer()
+                            TriggerEvent(activity.startEvent)
+                            flags.actionInProgress = true
+                        end
                     end
                 end
             end
@@ -37,135 +95,9 @@ Citizen.CreateThread(function()
     end
 end)
 
-
--- Generic Progressbar Function
-function Progressbar(minTime, maxTime, progressBarText, animation, serverEvent, flagName)
-    local waitTime = math.random(minTime, maxTime)
-    _G[flagName] = true  -- Dynamically set the flag using the global table
-    actionInProgress = true  -- Set flag to true when an action starts
-    ESX.Progressbar(progressBarText, waitTime, {
-        FreezePlayer = true,
-        label = progressBarText,
-        useWhileDead = false,
-        canCancel = true,
-        TaskStartScenarioInPlace(PlayerPedId(), animation, 0, true),
-        controlDisables = {
-            disableMovement = true,
-            disableCarMovement = true,
-            disableMouse = false,
-            disableCombat = true,
-        },
-        onFinish = function()
-            TriggerServerEvent(serverEvent)
-            _G[flagName] = false  -- Reset the flag
-            actionInProgress = false  -- Reset the action flag
-            ClearPedTasks(PlayerPedId())
-        end,
-        onCancel = function()
-            _G[flagName] = false  -- Reset the flag
-            actionInProgress = false  -- Reset the action flag
-            TriggerEvent('cancelAction')
-        end,
-    })
-end
-
-RegisterNetEvent('SellPearls:start')
-AddEventHandler('SellPearls:start', function()
-    local playerPed = PlayerPedId()
-    local pos = GetEntityCoords(playerPed)
-    local sellingLocation = Config.activityConfigs.pearlSelling.location
-    local distance = #(pos - sellingLocation)
-
-    if distance <= Config.activityConfigs.pearlSelling.distance then
-        -- Ensure the player is at the selling location
-        TriggerServerEvent('SellPearls:complete')
-        
-    actionInProgress = false  -- Reset the action flag
-else
-    ESX.ShowNotification("You need to be closer to the shop to sell pearls.")
-end
-end)
-        
--- Event handlers for actions
-RegisterNetEvent('PickUpClams:start')
-AddEventHandler('PickUpClams:start', function()
-    local config = Config.activityConfigs.clams.progress
-    Progressbar(config[1], config[2], config[3], config[4], config[5], Config.activityConfigs.clams.flag)
-end)
-
-
--- Need fix this so you can rellsell things
--- Add sound 
-
-
-RegisterNetEvent('cancelAction')
-AddEventHandler('cancelAction', function()
-    print("Action is stopped")
-    ClearPedTasks(PlayerPedId())
-    actionInProgress = false  -- Reset the action flag
-end)
-
-RegisterNetEvent('ProcessPearls:start')
-AddEventHandler('ProcessPearls:start', function()
-    if not isPunished then
-        TriggerServerEvent('FactGame:RequestQuestion')
-    else
-        ESX.ShowNotification("You must wait until your punishment timer expires before processing pearls.", "error")
-    end
-end)
-
-local firstQuestion = true -- Track if it's the first question
-
-RegisterNetEvent('FactGame:ReceiveQuestion')
-AddEventHandler('FactGame:ReceiveQuestion', function(fact, isTrue)
-    currentQuestion = fact
-    currentCorrectAnswer = isTrue
-
-    if firstQuestion then
-        questionTimer = GetGameTimer() + questionDuration + 5000 -- Give extra 5 seconds for the first question
-        firstQuestion = false
-
-        ESX.ShowAdvancedNotification("Quiz Game Controls", "Quick Guide", 
-        "Welcome to the quiz game! Here's how you play:\n\n" ..
-        "• Press [~g~E~s~] to answer ~b~TRUE~s~.\n" ..
-        "• Press [~r~Q~s~] to answer ~r~FALSE~s~.\n" ..
-        "• Take your time, especially on the first question!",
-        "CHAR_ANTONIA", 2, true, true, 140)
-        DisableAllControlActions(0)
-        -- Wait for 3 seconds (3000 milliseconds) before showing the first question
-        Citizen.Wait(1000)
-
-        -- Show the first question with an extended duration
-        ESX.ShowNotification("Here's your first question! Take your time.\nQuestion: " .. fact, "info", questionDuration + 5000)
-
-
-    else
-        questionTimer = GetGameTimer() + questionDuration
-        ESX.ShowNotification("Quick! Answer this: " .. fact, "info", questionDuration)
-    end
-
-    questionAnswered = false
-    TaskStartScenarioInPlace(PlayerPedId(), 'WORLD_HUMAN_HAMMERING', 0, true) -- Play animation while processing
-end)
-
-RegisterNetEvent('FactGame:AnswerResult')
-AddEventHandler('FactGame:AnswerResult', function(isCorrect)
-    ClearPedTasks(PlayerPedId()) -- Stop animation when the answer is received
-
-    if isCorrect then
-        ESX.ShowNotification("Correct! Good job.", 'success')
-    else
-        ESX.ShowNotification("Incorrect! Better luck next time.", "error")
-        punishmentTimer = GetGameTimer() + math.random(Config.pearlprocesstimer.a, Config.pearlprocesstimer.b)
-        isPunished = true
-    end
-
-    questionAnswered = true
-end)
-
 Citizen.CreateThread(function()
     while true do
-        Citizen.Wait(5)
+        Citizen.Wait(50) -- Adjusted polling interval for quiz game
 
         if currentQuestion then
             if IsControlJustReleased(0, Config.inputs.key_true_answer) then
@@ -180,71 +112,219 @@ Citizen.CreateThread(function()
                 currentQuestion = nil
             end
 
-            if GetGameTimer() > questionTimer and not questionAnswered then
-                ESX.ShowNotification("Time is up! You missed the chance.", "error")
-                punishmentTimer = GetGameTimer() + math.random(Config.pearlprocesstimer.a, Config.pearlprocesstimer.b)
-                isPunished = true
+            if GetGameTimer() > timers.questionTimer and not questionAnswered then
+                showNotification("Time is up! You missed the chance.", "error")
+                timers.punishmentTimer = GetGameTimer() + math.random(Config.pearlprocesstimer.a, Config.pearlprocesstimer.b)
+                flags.isPunished = true
                 currentQuestion = nil
                 TriggerEvent('cancelAction')
                 TriggerServerEvent('FactGame:GivePearlsWrongAnswer')
             end
         end
 
-        if isPunished and IsControlJustReleased(0, Config.inputs.Pick_up) then
+        if flags.isPunished then
+            if IsControlJustReleased(0, Config.inputs.Pick_up) then
+                showNotification("You're too tired to continue right now. Rest for a bit.", "error")
+            end
+
+            if GetGameTimer() > timers.punishmentTimer then
+                flags.isPunished = false
+                showNotification("You're feeling better. You can process pearls again.", "success")
+            end
+        end
+    end
+end)
+
+
+
+-- Thread for handling quiz game inputs and timers
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(50) -- Adjusted polling interval for quiz game
+
+        if currentQuestion then
+            if IsControlJustReleased(0, Config.inputs.key_true_answer) then
+                DisableAllControlActions(0)
+                TriggerServerEvent('FactGame:CheckAnswer', currentQuestion, true)
+                TriggerEvent('cancelAction')
+                currentQuestion = nil
+            elseif IsControlJustReleased(0, Config.inputs.key_false_answer) then
+                DisableAllControlActions(0)
+                TriggerServerEvent('FactGame:CheckAnswer', currentQuestion, false)
+                TriggerEvent('cancelAction')
+                currentQuestion = nil
+            end
+
+            if GetGameTimer() > timers.questionTimer and not questionAnswered then
+                ESX.ShowNotification("Time is up! You missed the chance.", "error")
+                timers.punishmentTimer = GetGameTimer() + math.random(Config.pearlprocesstimer.a, Config.pearlprocesstimer.b)
+                flags.isPunished = true
+                currentQuestion = nil
+                TriggerEvent('cancelAction')
+                TriggerServerEvent('FactGame:GivePearlsWrongAnswer')
+            end
+        end
+
+        if flags.isPunished and IsControlJustReleased(0, Config.inputs.Pick_up) then
             ESX.ShowNotification("You're too tired to continue right now. Rest for a bit.")
         end
 
-        if isPunished and GetGameTimer() > punishmentTimer then
-            isPunished = false
+        if flags.isPunished and GetGameTimer() > timers.punishmentTimer then
+            flags.isPunished = false
             ESX.ShowNotification("You're feeling better. You can process pearls again.", "success")
         end
     end
 end)
 
---PED TEST 
+-- Thread for handling other actions
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(100) -- Adjusted polling interval for other actions
 
-local model = GetHashKey('a_f_m_fatcult_01') -- Use the model hash
-local coords = Config.locations.PearlBlackMarket
-local heading = Config.locations.PearlBlackMarketHeading -- Set the heading
+        -- Check for completion of actions
+        for activityName, activity in pairs(cachedConfig.activityConfigs) do
+            if activity.flag and flags[actionInProgress] then
+                if isPlayerNearActivity(activity) then
+                    -- Handle specific activity logic
+                end
+            end
+        end
+    end
+end)
 
--- Load the model if it's not already loaded
-RequestModel(model)
-while not HasModelLoaded(model) do
-    Wait(0)
+-- Function to handle progress bars
+function Progressbar(minTime, maxTime, progressBarText, animation, serverEvent, flagName)
+    local waitTime = math.random(minTime, maxTime)
+    flags[flagName] = true
+    flags.actionInProgress = true
+
+    ESX.Progressbar(progressBarText, waitTime, {
+        FreezePlayer = true,
+        label = progressBarText,
+        useWhileDead = false,
+        canCancel = true,
+        TaskStartScenarioInPlace(PlayerPedId(), animation, 0, true),
+        controlDisables = {
+            disableMovement = true,
+            disableCarMovement = true,
+            disableMouse = false,
+            disableCombat = true,
+        },
+        onFinish = function()
+            TriggerServerEvent(serverEvent)
+            flags[flagName] = false
+            flags.actionInProgress = false
+            ClearPedTasks(PlayerPedId())
+        end,
+        onCancel = function()
+            flags[flagName] = false
+            flags.actionInProgress = false
+            TriggerEvent('cancelAction')
+        end,
+    })
 end
 
--- Create the Ped
-local ped = CreatePed(4, model, coords.x, coords.y, coords.z, heading, true, true)
+-- Event handlers for starting actions
+RegisterNetEvent('SellPearls:start')
+AddEventHandler('SellPearls:start', function()
+    -- No need for Citizen.CreateThread if the logic is simple
+    if isPlayerNearActivity(cachedConfig.activityConfigs.pearlSelling) then
+        TriggerServerEvent('SellPearls:complete')
+        flags.actionInProgress = false
+    else
+        ESX.ShowNotification("You need to be closer to the shop to sell pearls.")
+    end
+end)
 
--- Ensure the Ped is a network entity
-local netId = NetworkGetNetworkIdFromEntity(ped)
-SetNetworkIdCanMigrate(netId, true)
-SetNetworkIdExistsOnAllMachines(netId, true)
+RegisterNetEvent('PickUpClams:start')
+AddEventHandler('PickUpClams:start', function()
+    local config = cachedConfig.clamProgressConfig
+    Progressbar(config[1], config[2], config[3], config[4], config[5], cachedConfig.activityConfigs.clams.flag)
+end)
 
--- Wait a bit to ensure the Ped is created properly
-Wait(250)
+RegisterNetEvent('cancelAction')
+AddEventHandler('cancelAction', function()
+    ClearPedTasks(PlayerPedId())
+    flags.actionInProgress = false
+end)
 
--- Check if the Ped exists
-if DoesEntityExist(ped) then
-    print("Ped ID is " .. ped)
-    print('Successfully Spawned Ped!')
+RegisterNetEvent('ProcessPearls:start')
+AddEventHandler('ProcessPearls:start', function()
+    if not flags.isPunished then
+        TriggerServerEvent('FactGame:RequestQuestion')
+    else
+        ESX.ShowNotification("You must wait until your punishment timer expires before processing pearls.", "error")
+    end
+end)
 
-    -- Freeze the Ped in place
-    FreezeEntityPosition(ped, true)
+RegisterNetEvent('FactGame:ReceiveQuestion')
+AddEventHandler('FactGame:ReceiveQuestion', function(fact, isTrue)
+    currentQuestion = fact
+    currentCorrectAnswer = isTrue
 
-    -- Prevent the Ped from fleeing and block non-temporary events
-    SetPedFleeAttributes(ped, 0, false)
-    SetBlockingOfNonTemporaryEvents(ped, true)
-    
+    if firstQuestion then
+        timers.questionTimer = GetGameTimer() + timers.questionDuration + 5000
+        firstQuestion = false
 
-    -- Set up state bags for synchronization
-    Entity(ped).state:set('exampleState', 'someValue', true) -- Syncs to all clients
+        ESX.ShowAdvancedNotification("Quiz Game Controls", "Quick Guide", 
+        "Welcome to the quiz game! Here's how you play:\n\n" ..
+        "• Press [~g~E~s~] to answer ~b~TRUE~s~.\n" ..
+        "• Press [~r~Q~s~] to answer ~r~FALSE~s~.\n" ..
+        "• Take your time, especially on the first question!",
+        "CHAR_ANTONIA", 2, true, true, 140)
+        DisableAllControlActions(0)
+        Citizen.Wait(1000)
 
-    -- Notify the server to sync this state with other clients
-    TriggerServerEvent('syncPedState', netId, 'exampleState', 'someValue')
-else
-    print('Failed to Spawn Ped!')
-end
--- Make Clam pick up more resource effective (0.8ms per clam)
--- Optimize
--- Make Blimps
+        ESX.ShowNotification("Here's your first question! Take your time.\nQuestion: " .. fact, "info", timers.questionDuration + 5000)
+    else
+        timers.questionTimer = GetGameTimer() + timers.questionDuration
+        ESX.ShowNotification("Quick! Answer this: " .. fact, "info", timers.questionDuration)
+    end
+
+    questionAnswered = false
+    TaskStartScenarioInPlace(PlayerPedId(), 'WORLD_HUMAN_HAMMERING', 0, true)
+end)
+
+RegisterNetEvent('FactGame:AnswerResult')
+AddEventHandler('FactGame:AnswerResult', function(isCorrect)
+    ClearPedTasks(PlayerPedId())
+
+    if isCorrect then
+        ESX.ShowNotification("Correct! Good job.", 'success')
+    else
+        ESX.ShowNotification("Incorrect! Better luck next time.", "error")
+        timers.punishmentTimer = GetGameTimer() + math.random(Config.pearlprocesstimer.a, Config.pearlprocesstimer.b)
+        flags.isPunished = true
+    end
+
+    questionAnswered = true
+end)
+
+-- Thread to handle PED and its state
+Citizen.CreateThread(function()
+    RequestModel(cachedConfig.pearlModelHash)
+    while not HasModelLoaded(cachedConfig.pearlModelHash) do
+        Citizen.Wait(100) -- Adjusted wait time
+    end
+
+    local ped = CreatePed(4, cachedConfig.pearlModelHash, Config.locations.PearlBlackMarket.x, Config.locations.PearlBlackMarket.y, Config.locations.PearlBlackMarket.z, Config.locations.PearlBlackMarketHeading, true, true)
+    local netId = NetworkGetNetworkIdFromEntity(ped)
+    SetNetworkIdCanMigrate(netId, true)
+    SetNetworkIdExistsOnAllMachines(netId, true)
+
+    Citizen.Wait(250)
+
+    if DoesEntityExist(ped) then
+        print("Ped ID is " .. ped)
+        print('Successfully Spawned Ped!')
+
+        FreezeEntityPosition(ped, true)
+        SetPedFleeAttributes(ped, 0, false)
+        SetBlockingOfNonTemporaryEvents(ped, true)
+
+        Entity(ped).state:set('exampleState', 'someValue', true)
+        TriggerServerEvent('syncPedState', netId, 'exampleState', 'someValue')
+    else
+        print('Failed to Spawn Ped!')
+    end
+end)

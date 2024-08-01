@@ -2,8 +2,8 @@ fx_version 'cerulean'
 game 'gta5'
 
 client_scripts {
-    'client.lua',
-    -- other client scripts...
+    'config.lua',
+    'client.lua' -- Your main client script
 }
 
 server_scripts {

@@ -61,7 +61,7 @@ Config.activityConfigs = {
         startEvent = 'ProcessPearls:start',
         helpText = "Press " ..keyNames[Config.inputs.Pick_up] .. " to start processing the pearls",
         inWater = false,
-        flag = 'ProcessClams',
+        flag = 'ProcessPearls',
     },
     pearlSelling = {
         location = Config.locations.PearlBlackMarket,
