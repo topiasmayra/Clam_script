@@ -83,7 +83,7 @@ Citizen.CreateThread(function()
                     else
                         showNotification(activity.helpText, "info")
 
-                        if IsControlJustReleased(0, Config.inputs.Pick_up) and GetGameTimer() - lastInputTime > debounceInterval then
+                        if IsControlJustPressed(0, Config.inputs.Pick_up) and GetGameTimer() - lastInputTime > debounceInterval then
                             lastInputTime = GetGameTimer()
                             TriggerEvent(activity.startEvent)
                             flags.actionInProgress = true
@@ -176,22 +176,6 @@ Citizen.CreateThread(function()
     end
 end)
 
--- Thread for handling other actions
-Citizen.CreateThread(function()
-    while true do
-        Citizen.Wait(100) -- Adjusted polling interval for other actions
-
-        -- Check for completion of actions
-        for activityName, activity in pairs(cachedConfig.activityConfigs) do
-            if activity.flag and flags[actionInProgress] then
-                if isPlayerNearActivity(activity) then
-                    -- Handle specific activity logic
-                end
-            end
-        end
-    end
-end)
-
 -- Function to handle progress bars
 function Progressbar(minTime, maxTime, progressBarText, animation, serverEvent, flagName)
     local waitTime = math.random(minTime, maxTime)
@@ -203,7 +187,7 @@ function Progressbar(minTime, maxTime, progressBarText, animation, serverEvent, 
         label = progressBarText,
         useWhileDead = false,
         canCancel = true,
-        TaskStartScenarioInPlace(PlayerPedId(), animation, 0, true),
+        TaskStartScenarioInPlace(playerPed, animation, 0, true),
         controlDisables = {
             disableMovement = true,
             disableCarMovement = true,
@@ -229,8 +213,11 @@ RegisterNetEvent('SellPearls:start')
 AddEventHandler('SellPearls:start', function()
     -- No need for Citizen.CreateThread if the logic is simple
     if isPlayerNearActivity(cachedConfig.activityConfigs.pearlSelling) then
+        TaskStartScenarioInPlace(PlayerPedId(), 'WORLD_HUMAN_MUSCLE_FLEX', 0, true)
         TriggerServerEvent('SellPearls:complete')
+        ClearPedTasks(PlayerId())
         flags.actionInProgress = false
+
     else
         ESX.ShowNotification("You need to be closer to the shop to sell pearls.")
     end
@@ -282,12 +269,12 @@ AddEventHandler('FactGame:ReceiveQuestion', function(fact, isTrue)
     end
 
     questionAnswered = false
-    TaskStartScenarioInPlace(PlayerPedId(), 'WORLD_HUMAN_HAMMERING', 0, true)
+    TaskStartScenarioInPlace(PlayerPedId, 'WORLD_HUMAN_HAMMERING', 0, true)
 end)
 
 RegisterNetEvent('FactGame:AnswerResult')
 AddEventHandler('FactGame:AnswerResult', function(isCorrect)
-    ClearPedTasks(PlayerPedId())
+    ClearPedTasks(PlayerPedId)
 
     if isCorrect then
         ESX.ShowNotification("Correct! Good job.", 'success')
@@ -328,3 +315,5 @@ Citizen.CreateThread(function()
         print('Failed to Spawn Ped!')
     end
 end)
+
+--Why is clam harvesting so rescource intensive?
