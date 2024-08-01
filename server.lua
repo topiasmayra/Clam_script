@@ -41,7 +41,7 @@ local function processItems(PlayerId, inputItem, inputAmount, outputItem, output
 end
     
     
-    -- Event handlers
+
     RegisterNetEvent('Giveclams')
     AddEventHandler('Giveclams', function()
         local PlayerId = source

@@ -81,7 +81,10 @@ AddEventHandler('SellPearls:start', function()
         TriggerServerEvent('SellPearls:complete')
         
     actionInProgress = false  -- Reset the action flag
-
+else
+    ESX.ShowNotification("You need to be closer to the shop to sell pearls.")
+end
+end)
         
 -- Event handlers for actions
 RegisterNetEvent('PickUpClams:start')
@@ -89,10 +92,7 @@ AddEventHandler('PickUpClams:start', function()
     local config = Config.activityConfigs.clams.progress
     Progressbar(config[1], config[2], config[3], config[4], config[5], Config.activityConfigs.clams.flag)
 end)
-    else
-        ESX.ShowNotification("You need to be closer to the shop to sell pearls.")
-    end
-end)
+
 
 -- Need fix this so you can rellsell things
 -- Add sound 
