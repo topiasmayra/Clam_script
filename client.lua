@@ -15,30 +15,28 @@ Citizen.CreateThread(function()
     while true do
         Citizen.Wait(50) -- Polling interval
 
-        -- Only proceed if no action or timer is active
-        if not actionInProgress and not isPunished then
-            local playerPed = PlayerPedId()
-            local pos = GetEntityCoords(playerPed)
-            for _, activity in pairs(Config.activityConfigs) do
-                local distance = #(pos - activity.location)
+        local playerPed = PlayerPedId()
+        local pos = GetEntityCoords(playerPed)
 
-                if distance <= activity.distance then
-                    if activity.inWater and not IsEntityInWater(playerPed) then
-                        ESX.ShowNotification("You need to be in the water to " .. activity.helpText:lower())
-                    else
-                        ESX.ShowHelpNotification(activity.helpText, false)
-                        
-                        
-                        if IsControlPressed(0, Config.inputs.Pick_up) and not IsEntityDead(playerPed) and not _G[activity.flag] then
-                            TriggerEvent(activity.startEvent)
-                            actionInProgress = true  -- Set flag to true when an action starts
-                        end
+        for _, activity in pairs(Config.activityConfigs) do
+            local distance = #(pos - activity.location) -- Ensure activity.location is a vector3
+
+            if distance <= activity.distance then
+                if activity.inWater and not IsEntityInWater(playerPed) then
+                    ESX.ShowNotification("You need to be in the water to " .. activity.helpText:lower())
+                else
+                    ESX.ShowHelpNotification(activity.helpText, false)
+
+                    if IsControlJustReleased(0, Config.inputs.Pick_up) and not IsEntityDead(playerPed) and not _G[activity.flag] then
+                        TriggerEvent(activity.startEvent)
+                        actionInProgress = true  -- Set flag to true when an action starts
                     end
                 end
             end
         end
     end
 end)
+
 
 -- Generic Progressbar Function
 function Progressbar(minTime, maxTime, progressBarText, animation, serverEvent, flagName)
@@ -71,12 +69,34 @@ function Progressbar(minTime, maxTime, progressBarText, animation, serverEvent, 
     })
 end
 
+RegisterNetEvent('SellPearls:start')
+AddEventHandler('SellPearls:start', function()
+    local playerPed = PlayerPedId()
+    local pos = GetEntityCoords(playerPed)
+    local sellingLocation = Config.activityConfigs.pearlSelling.location
+    local distance = #(pos - sellingLocation)
+
+    if distance <= Config.activityConfigs.pearlSelling.distance then
+        -- Ensure the player is at the selling location
+        TriggerServerEvent('SellPearls:complete')
+        
+    actionInProgress = false  -- Reset the action flag
+
+        
 -- Event handlers for actions
 RegisterNetEvent('PickUpClams:start')
 AddEventHandler('PickUpClams:start', function()
     local config = Config.activityConfigs.clams.progress
     Progressbar(config[1], config[2], config[3], config[4], config[5], Config.activityConfigs.clams.flag)
 end)
+    else
+        ESX.ShowNotification("You need to be closer to the shop to sell pearls.")
+    end
+end)
+
+-- Need fix this so you can rellsell things
+-- Add sound 
+
 
 RegisterNetEvent('cancelAction')
 AddEventHandler('cancelAction', function()
@@ -181,4 +201,50 @@ Citizen.CreateThread(function()
     end
 end)
 
+--PED TEST 
+
+local model = GetHashKey('a_f_m_fatcult_01') -- Use the model hash
+local coords = Config.locations.PearlBlackMarket
+local heading = Config.locations.PearlBlackMarketHeading -- Set the heading
+
+-- Load the model if it's not already loaded
+RequestModel(model)
+while not HasModelLoaded(model) do
+    Wait(0)
+end
+
+-- Create the Ped
+local ped = CreatePed(4, model, coords.x, coords.y, coords.z, heading, true, true)
+
+-- Ensure the Ped is a network entity
+local netId = NetworkGetNetworkIdFromEntity(ped)
+SetNetworkIdCanMigrate(netId, true)
+SetNetworkIdExistsOnAllMachines(netId, true)
+
+-- Wait a bit to ensure the Ped is created properly
+Wait(250)
+
+-- Check if the Ped exists
+if DoesEntityExist(ped) then
+    print("Ped ID is " .. ped)
+    print('Successfully Spawned Ped!')
+
+    -- Freeze the Ped in place
+    FreezeEntityPosition(ped, true)
+
+    -- Prevent the Ped from fleeing and block non-temporary events
+    SetPedFleeAttributes(ped, 0, false)
+    SetBlockingOfNonTemporaryEvents(ped, true)
+    
+
+    -- Set up state bags for synchronization
+    Entity(ped).state:set('exampleState', 'someValue', true) -- Syncs to all clients
+
+    -- Notify the server to sync this state with other clients
+    TriggerServerEvent('syncPedState', netId, 'exampleState', 'someValue')
+else
+    print('Failed to Spawn Ped!')
+end
 -- Make Clam pick up more resource effective (0.8ms per clam)
+-- Optimize
+-- Make Blimps

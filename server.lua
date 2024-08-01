@@ -21,7 +21,6 @@ local function processItems(PlayerId, inputItem, inputAmount, outputItem, output
         return
     end
 
-    -- Process the item exchange if the player has enough items and can carry the output
     if itemCount >= inputAmount then
         if inputItem then
             xPlayer.removeInventoryItem(inputItem, inputAmount)
@@ -96,3 +95,62 @@ end
             TriggerEvent('FactGame:GivePearlsWrongAnswer', PlayerId)
         end
     end)
+
+      RegisterNetEvent('syncPedState')
+      AddEventHandler('syncPedState', function(netId, stateKey, stateValue)
+          local pedEntity = NetworkGetEntityFromNetworkId(netId)
+      
+          if DoesEntityExist(pedEntity) then
+              -- Update the state for the Ped and synchronize it across all clients
+              Entity(pedEntity).state:set(stateKey, stateValue, true)
+      
+              -- Optionally, broadcast to all clients for additional sync
+              TriggerClientEvent('updatePedState', -1, netId, stateKey, stateValue)
+          end
+      end)
+      
+
+-- Function to handle the actual pearl selling
+local function sellpearls(source)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    
+    if not xPlayer then
+        print("Error: Could not retrieve player with ID " .. tostring(source))
+        return
+    end
+    
+    local item = xPlayer.getInventoryItem('pearl')
+    local itemCount = item and item.count or 0
+    local minPrice = Config.activityConfigs.pearlSelling.price.min
+    local maxPrice = Config.activityConfigs.pearlSelling.price.max
+    
+    if minPrice <= 0 or maxPrice <= 0 then
+        print("Error: Invalid pearl price configuration.")
+        TriggerClientEvent('esx:showNotification', source, "Error: Invalid pearl price configuration.")
+        return
+    end
+    
+    -- Set the maximum pearls that can be sold
+    local maxSellAmount = 2
+    local sellAmount = math.random(1, 2) -- Limit the number of pearls to sell
+    
+    local price = math.random(minPrice, maxPrice)
+    local total = sellAmount * price
+    
+    if sellAmount > 0 then
+        xPlayer.removeInventoryItem('pearl', sellAmount)
+        xPlayer.addMoney(total)
+        TriggerClientEvent('esx:showNotification', source, "You sold " .. sellAmount .. " pearls for $" .. total)
+    else
+        TriggerClientEvent('esx:showNotification', source, "You don't have any pearls to sell.")
+    end
+end
+
+-- Register the event for completing the sale
+RegisterNetEvent('SellPearls:complete')
+AddEventHandler('SellPearls:complete', function()
+    sellpearls(source)
+end)
+
+
+--Stop peds feeling

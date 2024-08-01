@@ -7,11 +7,6 @@ Config.inputs = {
 }
 
 
--- Define the price range for pearls
-Config.PearlPrice = {
-    min = 600,   -- Minimum price per pearl in currency
-    max = 300   -- Maximum price per pearl in currency
-}
 
 -- Define the clam timer range
 Config.clamtimer = {
@@ -37,8 +32,10 @@ Config.amount = {
 
 -- Define  locations for clams pools and pearl process palace
 Config.locations = {
-    Clam_processing_place = vector3(1343.2782, 4390.6299, 44.3437),
-    clam_pool = vector3(-3114.4387, 8.2212, -2.4179) 
+    ClamProcessingPlace = vector3(1343.2782, 4390.6299, 44.3437),
+    ClamPool = vector3(-3114.4387, 8.2212, -2.4179),
+    PearlBlackMarket  = vector3(1513.5248, 3784.1704, 34.0),
+    PearlBlackMarketHeading = 131.2619
 }
 
 local keyNames = {
@@ -47,12 +44,9 @@ local keyNames = {
     [45] = "R",
     -- Add more key mappings as needed
 }
-
-
-
 Config.activityConfigs = {
     clams = {
-        location = Config.locations.clam_pool,
+        location = Config.locations.ClamPool,
         distance = 40.0,
         startEvent = 'PickUpClams:start',
         helpText = "Press "  .. keyNames[Config.inputs.Pick_up] .. " to pick up some clams",
@@ -62,12 +56,24 @@ Config.activityConfigs = {
         progress = {Config.clamtimer.a, Config.clamtimer.b, "Digging up clams", "WORLD_HUMAN_GARDENER_PLANT", 'Giveclams'}
     },
     pearls = {
-        location = Config.locations.Clam_processing_place,
+        location = Config.locations.ClamProcessingPlace,
         distance = 0.5,
         startEvent = 'ProcessPearls:start',
         helpText = "Press " ..keyNames[Config.inputs.Pick_up] .. " to start processing the pearls",
         inWater = false,
         flag = 'ProcessClams',
+    },
+    pearlSelling = {
+        location = Config.locations.PearlBlackMarket,
+        distance = 1.0,
+        startEvent = 'SellPearls:start',
+        helpText = "Press " .. keyNames[Config.inputs.Pick_up] .. " to sell pearls",
+        flag = 'SellPearls',
+        shopkeeper = 'a_f_m_fatcult_01',
+        price = {
+            min = 500,
+            max = 3000
+        }
     }
 }
 
