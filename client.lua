@@ -35,6 +35,7 @@ local cachedConfig = {
 
 -- Optimized function to check if player is near an activity
 local function isPlayerNearActivity(activity)
+
     local location = activity.location
     local distanceSquared = (playerPos.x - location.x) ^ 2 + (playerPos.y - location.y) ^ 2 + (playerPos.z - location.z) ^ 2
     local distanceThresholdSquared = activity.distance ^ 2
@@ -88,7 +89,7 @@ Citizen.CreateThread(function()
                             TriggerEvent(activity.startEvent)
                             flags.actionInProgress = true
                         end
-                    end
+                        end
                 end
             end
         end
@@ -175,6 +176,7 @@ Citizen.CreateThread(function()
         end
     end
 end)
+
 
 -- Function to handle progress bars
 function Progressbar(minTime, maxTime, progressBarText, animation, serverEvent, flagName)
@@ -269,7 +271,7 @@ AddEventHandler('FactGame:ReceiveQuestion', function(fact, isTrue)
     end
 
     questionAnswered = false
-    TaskStartScenarioInPlace(PlayerPedId, 'WORLD_HUMAN_HAMMERING', 0, true)
+    TaskStartScenarioInPlace(PlayerPedId(), 'WORLD_HUMAN_HAMMERING', 0, true)
 end)
 
 RegisterNetEvent('FactGame:AnswerResult')
@@ -316,4 +318,8 @@ Citizen.CreateThread(function()
     end
 end)
 
+
 --Why is clam harvesting so rescource intensive?
+-- Control actions not disable correctly
+-- Make diffrent threath for quiz game and button press c
+-- Make ped not die

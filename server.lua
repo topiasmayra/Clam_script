@@ -139,3 +139,7 @@ AddEventHandler('SellPearls:complete', function()
     sellpearls(source)
 end)
     
+
+--Funtion if player is dead or disconnected to cancel the activity
+-- 
+
