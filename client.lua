@@ -71,20 +71,19 @@ Citizen.CreateThread(function()
     end
 
     while true do
-        Citizen.Wait(100) -- Adjusted polling interval
+        Citizen.Wait(50) -- Adjusted polling interval
 
         playerPos = GetEntityCoords(playerPed) -- Cache player position
 
-        -- Handle activity locations
         for activityName, activity in pairs(cachedConfig.activityConfigs) do
             if isPlayerInWater() or not activity.inWater then
                 if isPlayerNearActivity(activity) then
                     if activity.inWater and not isPlayerInWater() then
                         showNotification("You need to be in the water to " .. activity.helpText:lower(), "info")
-                    else
+                    else if not flags.actionInProgress == true then
                         showNotification(activity.helpText, "info")
-
                         if IsControlJustPressed(0, Config.inputs.Pick_up) and GetGameTimer() - lastInputTime > debounceInterval then
+                            
                             lastInputTime = GetGameTimer()
                             TriggerEvent(activity.startEvent)
                             flags.actionInProgress = true
@@ -94,48 +93,8 @@ Citizen.CreateThread(function()
             end
         end
     end
+end
 end)
-
-Citizen.CreateThread(function()
-    while true do
-        Citizen.Wait(50) -- Adjusted polling interval for quiz game
-
-        if currentQuestion then
-            if IsControlJustReleased(0, Config.inputs.key_true_answer) then
-                DisableAllControlActions(0)
-                TriggerServerEvent('FactGame:CheckAnswer', currentQuestion, true)
-                TriggerEvent('cancelAction')
-                currentQuestion = nil
-            elseif IsControlJustReleased(0, Config.inputs.key_false_answer) then
-                DisableAllControlActions(0)
-                TriggerServerEvent('FactGame:CheckAnswer', currentQuestion, false)
-                TriggerEvent('cancelAction')
-                currentQuestion = nil
-            end
-
-            if GetGameTimer() > timers.questionTimer and not questionAnswered then
-                showNotification("Time is up! You missed the chance.", "error")
-                timers.punishmentTimer = GetGameTimer() + math.random(Config.pearlprocesstimer.a, Config.pearlprocesstimer.b)
-                flags.isPunished = true
-                currentQuestion = nil
-                TriggerEvent('cancelAction')
-                TriggerServerEvent('FactGame:GivePearlsWrongAnswer')
-            end
-        end
-
-        if flags.isPunished then
-            if IsControlJustReleased(0, Config.inputs.Pick_up) then
-                showNotification("You're too tired to continue right now. Rest for a bit.", "error")
-            end
-
-            if GetGameTimer() > timers.punishmentTimer then
-                flags.isPunished = false
-                showNotification("You're feeling better. You can process pearls again.", "success")
-            end
-        end
-    end
-end)
-
 
 
 -- Thread for handling quiz game inputs and timers
@@ -239,10 +198,10 @@ end)
 
 RegisterNetEvent('ProcessPearls:start')
 AddEventHandler('ProcessPearls:start', function()
+    
+    print("I Was call")
     if not flags.isPunished then
         TriggerServerEvent('FactGame:RequestQuestion')
-    else
-        ESX.ShowNotification("You must wait until your punishment timer expires before processing pearls.", "error")
     end
 end)
 
@@ -257,12 +216,12 @@ AddEventHandler('FactGame:ReceiveQuestion', function(fact, isTrue)
 
         ESX.ShowAdvancedNotification("Quiz Game Controls", "Quick Guide", 
         "Welcome to the quiz game! Here's how you play:\n\n" ..
-        "• Press [~g~E~s~] to answer ~b~TRUE~s~.\n" ..
+        "• Press [~g~R~s~] to answer ~b~TRUE~s~.\n" ..
         "• Press [~r~Q~s~] to answer ~r~FALSE~s~.\n" ..
         "• Take your time, especially on the first question!",
         "CHAR_ANTONIA", 2, true, true, 140)
         DisableAllControlActions(0)
-        Citizen.Wait(1000)
+        Citizen.Wait(500)
 
         ESX.ShowNotification("Here's your first question! Take your time.\nQuestion: " .. fact, "info", timers.questionDuration + 5000)
     else
@@ -276,7 +235,8 @@ end)
 
 RegisterNetEvent('FactGame:AnswerResult')
 AddEventHandler('FactGame:AnswerResult', function(isCorrect)
-    ClearPedTasks(PlayerPedId)
+    print('Answered question: ' .. tostring(isCorrect))
+    ClearPedTasks(PlayerPedId())
 
     if isCorrect then
         ESX.ShowNotification("Correct! Good job.", 'success')
@@ -323,3 +283,8 @@ end)
 -- Control actions not disable correctly
 -- Make diffrent threath for quiz game and button press c
 -- Make ped not die
+
+
+--Invesgete slow poll rate 
+-- Make surer rescourse start when player connects
+-- Make seperated threath
