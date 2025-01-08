@@ -1,3 +1,8 @@
+AddEventHandler('playerJoining', function()
+    local playerId = source
+    TriggerClientEvent('Client:AssignPlayerId', playerId, playerId)
+    print("Player joined: " .. GetPlayerName(playerId) .. ", ID: " .. playerId)
+end)
 local function processItems(PlayerId, inputItem, inputAmount, outputItem, outputAmountRange, successMessage, removeOnFailure, outputOnFailure)
     local xPlayer = ESX.GetPlayerFromId(PlayerId)
     if not xPlayer then
@@ -117,20 +122,18 @@ local function sellpearls(source)
         return
     end
     
-    -- Set the maximum pearls that can be sold
-    local maxSellAmount = 2
-    local sellAmount = math.random(1, 2) -- Limit the number of pearls to sell
+    if itemCount <= 0 then
+        TriggerClientEvent('esx:showNotification', source, "You don't have any pearls to sell.")
+        return
+    end
     
     local price = math.random(minPrice, maxPrice)
-    local total = sellAmount * price
+    local total = itemCount * price
     
-    if sellAmount > 0 then
-        xPlayer.removeInventoryItem('pearl', sellAmount)
-        xPlayer.addMoney(total)
-        TriggerClientEvent('esx:showNotification', source, "You sold " .. sellAmount .. " pearls for $" .. total)
-    else
-        TriggerClientEvent('esx:showNotification', source, "You don't have any pearls to sell.")
-    end
+    xPlayer.removeInventoryItem('pearl', itemCount)
+    xPlayer.addMoney(total)
+    print("Player " .. GetPlayerName(source) .. " sold " .. itemCount .. " pearls for $" .. total)
+    TriggerClientEvent('esx:showNotification', source, "You sold " .. itemCount .. " pearls for $" .. total)
 end
 
 -- Register the event for completing the sale
@@ -138,8 +141,14 @@ RegisterNetEvent('SellPearls:complete')
 AddEventHandler('SellPearls:complete', function()
     sellpearls(source)
 end)
-    
 
---Funtion if player is dead or disconnected to cancel the activity
--- 
+-- Event handler for successful pearl sale
+RegisterNetEvent('SellPearls:success')
+AddEventHandler('SellPearls:success', function()
+    TaskStartScenarioInPlace(PlayerPedId(), 'WORLD_HUMAN_MUSCLE_FLEX', 0, true)
+    Citizen.Wait(3000) -- Duration of the scenario in milliseconds
+    ClearPedTasks(PlayerPedId())
+    print("Sell scenario completed.")
+end)
+    
 

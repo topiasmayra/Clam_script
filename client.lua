@@ -1,5 +1,66 @@
--- Global variables
-local playerPed = PlayerPedId()
+-- Function to initialize variables
+local function initializeVariables()
+    playerPed = PlayerPedId()
+    playerPos = GetEntityCoords(playerPed)
+    debounceInterval = 300 -- milliseconds
+    lastInputTime = 0
+    lastNotificationTime = 0
+
+    -- Flags and timers
+    flags = {
+        PickUpClams = false,
+        ProcessClams = false,
+        actionInProgress = false,
+        isPunished = false
+    }
+
+    timers = {
+        questionTimer = 0,
+        questionDuration = Config.pearlprocesstimer.timer,
+        punishmentTimer = 0
+    }
+
+    currentQuestion = nil
+    currentCorrectAnswer = nil
+    questionAnswered = false
+    firstQuestion = true
+
+    cachedConfig = {
+        pearlSellingLocation = Config.activityConfigs.pearlSelling.location,
+        clamProgressConfig = Config.activityConfigs.clams.progress,
+        pearlModelHash = GetHashKey('a_f_m_fatcult_01'),
+        activityConfigs = Config.activityConfigs
+    }
+end
+
+-- Initialize variables on script start
+initializeVariables()
+
+-- Make sure that Ped has been spawned before proceeding
+AddEventHandler('playerSpawned', function()
+    playerPed = PlayerPedId()
+    print("Player spawned. Local playerPed: " .. tostring(playerPed))
+end)
+
+-- Handle resource reset
+AddEventHandler('onResourceStart', function(resourceName)
+    if GetCurrentResourceName() == resourceName then
+        initializeVariables()
+        print("Resource restarted: " .. resourceName .. ", variables reinitialized.")
+    end
+end)
+
+--Handle resource stops and clear up state  
+
+AddEventHandler('onResourceStop', function(resourceName)
+    if GetCurrentResourceName() == resourceName then
+        -- Clean up tasks or reset state if necessary
+        ClearPedTasks(PlayerPedId())
+        flags.actionInProgress = false
+        print("Resource stopped: " .. resourceName .. ", state cleaned up.")
+    end
+end)
+
 local playerPos = GetEntityCoords(playerPed)
 local debounceInterval = 300 -- milliseconds
 local lastInputTime = 0
@@ -17,20 +78,6 @@ local timers = {
     questionTimer = 0,
     questionDuration = Config.pearlprocesstimer.timer,
     punishmentTimer = 0
-    
-}
-
-local currentQuestion = nil
-local currentCorrectAnswer = nil
-local questionAnswered = false
-local firstQuestion = true
-
--- Cached Configuration Data
-local cachedConfig = {
-    pearlSellingLocation = Config.activityConfigs.pearlSelling.location,
-    clamProgressConfig = Config.activityConfigs.clams.progress,
-    pearlModelHash = GetHashKey('a_f_m_fatcult_01'),
-    activityConfigs = Config.activityConfigs
 }
 
 -- Optimized function to check if player is near an activity
@@ -41,7 +88,6 @@ local function isPlayerNearActivity(activity)
     local distanceThresholdSquared = activity.distance ^ 2
     return distanceSquared <= distanceThresholdSquared
 end
-
 
 -- Notification cooldown
 local notificationCooldown = 5000 -- milliseconds
@@ -72,7 +118,7 @@ Citizen.CreateThread(function()
 
     while true do
         Citizen.Wait(50) -- Adjusted polling interval
-
+        
         playerPos = GetEntityCoords(playerPed) -- Cache player position
 
         for activityName, activity in pairs(cachedConfig.activityConfigs) do
@@ -80,13 +126,12 @@ Citizen.CreateThread(function()
                 if isPlayerNearActivity(activity) then
                     if activity.inWater and not isPlayerInWater() then
                         showNotification("You need to be in the water to " .. activity.helpText:lower(), "info")
-                    else if not flags.actionInProgress == true then
+                    else if flags.actionInProgress == false then
                         showNotification(activity.helpText, "info")
                         if IsControlJustPressed(0, Config.inputs.Pick_up) and GetGameTimer() - lastInputTime > debounceInterval then
-                            
                             lastInputTime = GetGameTimer()
                             TriggerEvent(activity.startEvent)
-                            flags.actionInProgress = true
+                            --flags.actionInProgress = true
                         end
                         end
                 end
@@ -174,7 +219,6 @@ RegisterNetEvent('SellPearls:start')
 AddEventHandler('SellPearls:start', function()
     -- No need for Citizen.CreateThread if the logic is simple
     if isPlayerNearActivity(cachedConfig.activityConfigs.pearlSelling) then
-        TaskStartScenarioInPlace(PlayerPedId(), 'WORLD_HUMAN_MUSCLE_FLEX', 0, true)
         TriggerServerEvent('SellPearls:complete')
         ClearPedTasks(PlayerId())
         flags.actionInProgress = false
@@ -270,21 +314,11 @@ Citizen.CreateThread(function()
         FreezeEntityPosition(ped, true)
         SetPedFleeAttributes(ped, 0, false)
         SetBlockingOfNonTemporaryEvents(ped, true)
-
-        Entity(ped).state:set('exampleState', 'someValue', true)
-        TriggerServerEvent('syncPedState', netId, 'exampleState', 'someValue')
+        SetEntityCanBeDamaged(ped, false)
     else
         print('Failed to Spawn Ped!')
     end
 end)
 
-
---Why is clam harvesting so rescource intensive?
--- Control actions not disable correctly
--- Make diffrent threath for quiz game and button press c
--- Make ped not die
-
-
---Invesgete slow poll rate 
--- Make surer rescourse start when player connects
--- Make seperated threath
+-- Fix slow quessin time and wrong answer / time out happening for first questionTimer
+-- Animations not possible playing while selling pearls
