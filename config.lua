@@ -34,7 +34,7 @@ Config.amount = {
 Config.locations = {
     ClamProcessingPlace = vector3(1343.2782, 4390.6299, 44.3437),
     ClamPool = vector3(-3114.4387, 8.2212, -2.4179),
-    PearlBlackMarket  = vector3(1513.5248, 3784.1704, 34.0),
+    PearlBlackMarket  = vector3(1511.6173, 3782.2073, 32.9000),
     PearlBlackMarketHeading = 131.2619
 }
 

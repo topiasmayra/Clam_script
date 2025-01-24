@@ -150,5 +150,3 @@ AddEventHandler('SellPearls:success', function()
     ClearPedTasks(PlayerPedId())
     print("Sell scenario completed.")
 end)
-    
-

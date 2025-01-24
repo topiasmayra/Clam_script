@@ -145,14 +145,14 @@ end)
 -- Thread for handling quiz game inputs and timers
 Citizen.CreateThread(function()
     while true do
-        Citizen.Wait(50) -- Adjusted polling interval for quiz game
+        Citizen.Wait(5) -- Adjusted polling interval for quiz game
 
         if currentQuestion then
             if IsControlJustReleased(0, Config.inputs.key_true_answer) then
-                DisableAllControlActions(0)
                 TriggerServerEvent('FactGame:CheckAnswer', currentQuestion, true)
                 TriggerEvent('cancelAction')
                 currentQuestion = nil
+                DisableAllControlActions(0)
             elseif IsControlJustReleased(0, Config.inputs.key_false_answer) then
                 DisableAllControlActions(0)
                 TriggerServerEvent('FactGame:CheckAnswer', currentQuestion, false)
@@ -217,7 +217,6 @@ end
 -- Event handlers for starting actions
 RegisterNetEvent('SellPearls:start')
 AddEventHandler('SellPearls:start', function()
-    -- No need for Citizen.CreateThread if the logic is simple
     if isPlayerNearActivity(cachedConfig.activityConfigs.pearlSelling) then
         TriggerServerEvent('SellPearls:complete')
         ClearPedTasks(PlayerId())
@@ -242,8 +241,6 @@ end)
 
 RegisterNetEvent('ProcessPearls:start')
 AddEventHandler('ProcessPearls:start', function()
-    
-    print("I Was call")
     if not flags.isPunished then
         TriggerServerEvent('FactGame:RequestQuestion')
     end
@@ -264,9 +261,6 @@ AddEventHandler('FactGame:ReceiveQuestion', function(fact, isTrue)
         "• Press [~r~Q~s~] to answer ~r~FALSE~s~.\n" ..
         "• Take your time, especially on the first question!",
         "CHAR_ANTONIA", 2, true, true, 140)
-        DisableAllControlActions(0)
-        Citizen.Wait(500)
-
         ESX.ShowNotification("Here's your first question! Take your time.\nQuestion: " .. fact, "info", timers.questionDuration + 5000)
     else
         timers.questionTimer = GetGameTimer() + timers.questionDuration
@@ -319,6 +313,3 @@ Citizen.CreateThread(function()
         print('Failed to Spawn Ped!')
     end
 end)
-
--- Fix slow quessin time and wrong answer / time out happening for first questionTimer
--- Animations not possible playing while selling pearls
